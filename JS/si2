@@ -1,0 +1,34 @@
+-- Versión recomendada
+CREATE TABLE `stencil_history` (
+  `history_id` INT NOT NULL AUTO_INCREMENT, -- Es mejor tener un ID único para cada registro
+  `stencil_id` INT NOT NULL, -- La única FK que necesitas
+  `st_h_date` DATE NOT NULL, -- Usa DATETIME si la hora importa
+  `st_h_status` VARCHAR(10) NOT NULL,
+  `st_h_com` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`history_id`),
+  INDEX `fk_history_stencils_idx` (`stencil_id` ASC) VISIBLE,
+  CONSTRAINT `fk_history_stencils`
+    FOREIGN KEY (`stencil_id`)
+    REFERENCES `toolingVal`.`stencils` (`st_id`));
+
+CREATE TABLE `stencils` (
+  `st_id` INT NOT NULL AUTO_INCREMENT, -- También es buena idea que el ID sea autoincremental
+  `model_id` INT NOT NULL, -- La nueva clave foránea numérica
+  `supplier_id` INT NOT NULL, -- La nueva clave foránea numérica
+  `st_job` VARCHAR(11) NOT NULL,
+  `st_no_serie` VARCHAR(3) NULL,
+  `st_ver` VARCHAR(2) NULL,
+  `st_side` VARCHAR(3) NULL,
+  `thickness` INT NULL,
+  `st_status` VARCHAR(10) NULL,
+  `st_bc` VARCHAR(20) NULL,
+  `st_qr` BLOB NULL,
+  `st_current_us` INT NULL,
+  `st_mx_us` INT NULL,
+  PRIMARY KEY (`st_id`),
+  CONSTRAINT `fk_stencils_models`
+    FOREIGN KEY (`model_id`)
+    REFERENCES `toolingVal`.`models` (`model_id`),
+  CONSTRAINT `fk_stencils_suppliers`
+    FOREIGN KEY (`supplier_id`)
+    REFERENCES `toolingVal`.`suppliers` (`supplier_id`));
