@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Servicio para la base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine # Usa la imagen oficial de PostgreSQL
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1475 # La contraseña de tu base de datos
+      POSTGRES_DB: toolingValidation # El nombre de tu base de datos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Guarda los datos de la BD de forma persistente
+    ports:
+      - "5433:5432" # Opcional: Mapea el puerto para que puedas conectarte con DBeaver desde tu PC
+
+  # Servicio para tu aplicación Node.js
+  app:
+    build: . # Construye la imagen usando el Dockerfile en el directorio actual
+    restart: always
+    ports:
+      - "3000:3000" # Mapea el puerto 3000 de tu PC al puerto 3000 del contenedor
+    volumes:
+      - .:/usr/src/app # Sincroniza tu código local con el del contenedor para desarrollo
+      - /usr/src/app/node_modules # Evita que tu node_modules local sobreescriba el del contenedor
+    environment:
+      PGHOST: db # ¡Importante! El host de la BD ahora es el nombre del servicio 'db'
+      PGUSER: postgres
+      PGPASSWORD: 1475
+      PGDATABASE: toolingValidation
+      PGPORT: 5432
+    depends_on:
+      - db # Le dice a este servicio que espere a que la base de datos esté lista
+
+volumes:
+  postgres_data: # Define el volumen para persistir los datos de la BD

@@ -1,0 +1,552 @@
+html,
+.stencil-main-content {
+  flex-grow: 1;
+  /* Critical for vertical scroll: */
+  overflow-y: auto;
+}
+
+/* Estilo para el scroll de la tabla */
+.table-responsive {
+  overflow-x: auto;
+}
+
+body.indexForm {
+  height: 100%;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  overflow: hidden;
+  background: linear-gradient(110deg, #00b4d8 45%, #ffffff 45.1%);
+}
+
+body.body-line {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Asegura que el body ocupe al menos el 100% de la altura de la ventana */
+    margin: 0;
+    font-family: "Poppins", sans-serif;
+    background-color: #f0f2f5;
+}
+body.login-page {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background-color: #ffffff; /* Fondo base blanco */
+  height: 100vh;
+  overflow: hidden;
+  position: relative; /* Necesario para el pseudo-elemento */
+}
+
+/* La forma azul diagonal */
+body.login-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%; /* Ancho de la forma azul */
+  height: 100%;
+  background-color: #00b4d8;
+  /* La magia está aquí: cortamos la forma en diagonal */
+  clip-path: polygon(0 0, 100% 0, 75% 100%, 0% 100%);
+  z-index: -1; /* Lo enviamos detrás del contenido */
+}
+
+/* Contenedor principal Flexbox */
+.login-container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* El recuadro del formulario  */
+.login-form {
+   width: 100%;
+  max-width: 400px;
+  margin-left: 25%; /* Empuja el formulario hacia la derecha */
+
+}
+
+/* Título "Login"  */
+.login-form h2 {
+  font-size: 4rem; /* 64px aprox. */
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: #343a40;
+
+}
+
+/* Etiquetas */
+.form-group label {
+  font-size: 0.8rem; /* 12.8px aprox. */
+  font-weight: 700;
+  color: #adb5bd; /* Gris claro */
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+
+}
+
+/* Campos de texto */
+.login-form .form-control {
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  box-shadow: none;
+  height: 50px;
+  font-size: 1rem;
+}
+
+.login-form .form-control:focus {
+  border-color: #00b4d8;
+  box-shadow: 0 0 0 0.25rem rgba(0, 180, 216, 0.25);
+}
+
+
+/* Botón "Sign In"  */
+.signin-btn {
+  background-color: #212529; /* Negro oscuro */
+  color: #fff;
+  font-weight: 700;
+  padding: 12px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: none;
+  transition: background-color 0.2s;
+  width: 100%; /* Ocupa todo el ancho */
+  margin-top: 1.5rem;
+
+}
+
+.signin-btn:hover {
+  background-color: #00b4d8;
+  color: #fff;
+}
+
+.save-btn{
+  background-color: #b0bec5;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #90e0ef;
+  color: #fff;
+}
+
+/* --- Barra de Navegación Superior --- */
+.navbar-custom {
+  background-color: #00b4d8;
+  padding: 8px 15px;
+}
+
+.navbar-custom .navbar-brand {
+  color: #ffffff;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.navbar-custom .nav-link {
+  color: #ffffff;
+  font-weight: 700; /* Letra en negritas */
+  padding: 10px 20px;
+  margin: 0 5px; /* Espacio entre cada enlace */
+  border-radius: 30px; /* Bordes redondeados */
+  transition: background-color 0.3s ease; /* Transición suave para el hover */
+}
+
+.navbar-custom .nav-link:hover,
+.navbar-custom .nav-link.active {
+  background-color: #90e0ef; /* El color café del hover */
+  color: #ffffff;
+}
+
+/* Estilo para el nuevo botón de ícono (home) */
+.nav-icon-btn {
+  color: #ffffff;
+  font-size: 1.5rem; /* Tamaño del ícono */
+  padding: 6px 12px;
+  margin-right: 10px; /* Espacio entre el home y el logout */
+}
+.nav-icon-btn:hover {
+  color: #90e0ef;
+}
+
+.logout-btn {
+  background-color: #00b4d8;
+  color: #ffffff;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: 30px;
+}
+.logout-btn:hover {
+  color: #ffffff;
+  background-color: #90e0ef;
+}
+
+/* --- Contenido Principal --- */
+main.main-content {
+    flex-grow: 1; /* Le dice a la sección principal que crezca para ocupar todo el espacio disponible */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.scan-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 950px; /* Ancho máximo de la tarjeta */
+  padding: 4rem; /* Espacio interno generoso */
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+}
+
+.scan-prompt-text {
+  font-size: 3rem;
+  font-weight: 700; /* Fuente más delgada */
+  color: #b0bec5; /* Color gris pálido */
+  line-height: 1.3;
+}
+
+.qr-code-icon {
+  width: 100%;
+  max-width: 250px; /* Tamaño del icono QR */
+  color: #e0e0e0;
+  transform: rotate(-10deg); /* Inclinación del icono */
+}
+
+/* --- Barra Inferior --- */
+.footer-bar {
+  height: 50px;
+  background-color: #00b4d8; /* Mismo color oscuro que el botón */
+}
+
+/* SQUEEGEE HP */
+
+/* Estilo para el contenedor principal de la página */
+.squeegee-main-content {
+  background-color: #f0f2f5; /* Fondo gris claro */
+  flex: 1; /* Ocupa el espacio vertical restante */
+  padding-top: 1rem;
+}
+
+/* Título de la página ("SQUEEGEE") */
+.page-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #343a40;
+  margin-bottom: 1rem;
+  padding-left: 1rem;
+  letter-spacing: 0.15rem;
+}
+
+/* Navbar secundaria (Administración, Historial, etc.) */
+.sub-navbar {
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0;
+  background-color: #ffffff;
+  border-radius: 10px;
+}
+
+.sub-navbar .nav-link {
+  color: #b0bec5;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0;
+  transition: all 0.3s ease;
+}
+
+/* Efecto de hover y estado activo de la sub-navbar */
+.sub-navbar .nav-link:hover {
+  color: #90e0ef;
+}
+
+.sub-navbar .nav-link.active {
+  color: #90e0ef; /* Azul del navbar principal */
+  background-color: transparent;
+  border-bottom: 2px solid #90e0ef;
+}
+
+/* Estilos para la barra de búsqueda y el ícono */
+.search-actions .form-control {
+  border-radius: 20px;
+  border-color: #ddd;
+}
+.search-actions .input-group-text {
+  background-color: transparent;
+  border-left: none;
+  border-radius: 0 20px 20px 0;
+  color: #b0bec5;
+}
+
+.btn-icon-round {
+  background-color: #90e0ef;
+  color: #fff;
+  border-radius: 50%; /* Botón redondo */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilos de la tabla de datos */
+/*.squeegee-table th {
+  background-color: #b0bec5;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+.stencil-table th{
+  background-color: #b0bec5;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  
+}
+*/
+td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.table-qr {
+  width: 60px;
+  height: 60px;
+}
+
+/* --- ESTILOS PARA EL FORMULARIO DE REGISTRO --- */
+
+.registration-card {
+    background-color: #ffffff; /* Fondo gris muy claro */
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+}
+
+.form-section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057; /* Gris oscuro */
+    margin-bottom: 1.5rem;
+}
+
+.registration-card .form-label {
+    font-weight: 600;
+    color: #6c757d; /* Gris medio */
+    margin-bottom: 0.5rem;
+}
+
+.registration-card .form-control {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+}
+
+/* Estilo del mensaje de éxito */
+.success-message {
+    display: inline-block;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 30px; /* Bordes muy redondeados */
+    padding: 10px 25px;
+    font-weight: 700;
+    color: #495057;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajuste para el contenido principal de la página de squeegee */
+.squeegee-main-content {
+  /* Hacemos que la altura máxima sea el 100% de la ventana menos la altura de tu navbar (aprox. 60px) y footer.
+     ¡Puede que necesites ajustar este valor! */
+  height: calc(100vh - 70px); 
+
+  /* Le decimos que muestre una barra de scroll vertical si el contenido es más alto */
+  overflow-y: auto; 
+}
+
+/* Contenedor principal que envuelve todo */
+.search-container {
+  display: flex; /* Alinea el input y el botón en una línea */
+  align-items: center; /* Centra verticalmente los elementos */
+  border: 1px solid #dfe1e5; /* Borde sutil, similar al ejemplo */
+  border-radius: 24px; /* ¡La clave para hacerlo redondo! */
+  padding: 5px 10px; /* Espacio interior para que no se vea apretado */
+  max-width: 500px; /* Ancho máximo, ajústalo a tu gusto */
+  background-color: white; /* Fondo blanco */
+  transition: box-shadow 0.2s ease; /* Transición suave para el hover */
+}
+
+/* Efecto de sombra al pasar el mouse (hover) o al hacer clic (focus) */
+.search-container:hover,
+.search-container:focus-within {
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  border-color: rgba(223, 225, 229, 0); /* Opcional: oculta el borde al sombrear */
+}
+
+/* El campo de texto donde el usuario escribe */
+.search-input {
+  flex-grow: 1; /* Hace que el input ocupe todo el espacio disponible */
+  border: none; /* Quitamos el borde por defecto del input */
+  outline: none; /* Quitamos el feo borde azul que aparece al hacer clic */
+  padding: 8px; /* Espacio interior del texto */
+  font-size: 16px; /* Tamaño de la letra */
+  background-color: transparent; /* Fondo transparente para que tome el del contenedor */
+}
+
+/* El botón que contiene la lupa */
+.search-button {
+  background: none; /* Sin fondo */
+  border: none; /* Sin borde */
+  cursor: pointer; /* Cambia el cursor a una manita al pasar sobre él */
+  padding: 8px; /* Espacio para que el ícono no esté pegado */
+  color: #5f6368; /* Color del ícono */
+}
+
+/* Estilo para el ícono de Font Awesome */
+.search-button i {
+  font-size: 18px; /* Tamaño del ícono */
+}
+
+
+
+/* Contenedor principal de la vista de escaneo */
+.scan-view-container {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 950px;
+    padding: 2rem 3rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+}
+
+/* --- Vista 1: Selección de Línea --- */
+.line-selection-prompt {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #6c757d; /* Gris suave */
+    border: 1px solid #dee2e6;
+    border-radius: 30px;
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.line-carousel {
+    display: flex;
+    gap: 1.5rem; /* Espacio entre tarjetas */
+    padding: 1rem;
+    overflow-x: auto; /* Permite scroll horizontal */
+    -ms-overflow-style: none;  /* IE y Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+/* Ocultar barra de scroll para Chrome, Safari y Opera */
+.line-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.line-card {
+    flex: 0 0 250px; /* No crece, no se encoge, base de 250px */
+    height: 150px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.line-card:hover {
+    transform: translateY(-5px);
+    border-color: #00b4d8;
+    color: #00b4d8;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+/* --- Vista 2: Proceso de Escaneo --- */
+.scan-prompt-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.scan-prompt-area h1 {
+    font-size: 3.5rem;
+    font-weight: 300;
+    color: #b0bec5;
+    margin: 0;
+}
+
+.scan-prompt-area .barcode-icon {
+    font-size: 5rem; /* Bootstrap Icon size */
+    color: #e0e0e0;
+}
+
+.scan-context-area {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #00b4d8;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.scan-progress-item {
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 0;
+    font-size: 1.1rem;
+}
+
+.scan-progress-item .item-name {
+    color: #495057;
+    font-weight: 700;
+}
+
+.scan-progress-item .item-barcode {
+    color: #6c757d;
+}
+
+.scan-progress-item .checkmark-icon {
+    color: #28a745; /* Verde de éxito */
+    font-size: 1.75rem;
+}
+
+.reset-button-custom {
+    background-color: #dc3545; /* Rojo de peligro */
+    color: white;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: none;
+}
+#scanner-input {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    border: none;
+}
+
+
+.main-content-recipe {
+    flex-grow: 1; /* Ocupa el espacio vertical disponible */
+    padding: 2rem;   /* Mantiene un espacio interno */
+    overflow-y: auto; /* Permite el scroll si el contenido es muy largo */
+    /* Se eliminan las propiedades de centrado para que el contenido empiece desde arriba */
+}
+
+.scan-view-container {
+    background-color: #ffffff;
+    width: 100%;
+   /* Aumentado de 950px para hacerlo más ancho */
+    padding: 2rem 3rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+}

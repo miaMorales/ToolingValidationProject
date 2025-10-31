@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Squeegee</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="../CSS/styles.css" />
+</head>
+
+<body class="body-line">
+  <nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container-fluid">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="squeegee-hp.html">Squeegee</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="stencil-hp.html">Stencil</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="plate-hp.html">Plate</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="recipes.html">RECIPES</a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center">
+        <a href="adminIndex.html" class="btn nav-icon-btn">
+          <i class="bi bi-house-door-fill"></i>
+        </a>
+        <a href="#" class="btn logout-btn">Cerrar sesión</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="squeegee-main-content">
+    <div class="container-fluid p-4">
+      <h1 class="page-title">SQUEEGEE</h1>
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <ul class="nav nav-pills sub-navbar" id="squeegee-tabs">
+          <li class="nav-item">
+            <a class="nav-link sub-link active" href="#" data-target="#administracion-content">Administración</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link sub-link" href="#" data-target="#historial-content">Historial</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link sub-link" href="#" data-target="#registro-content">Registro</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link sub-link" href="#" data-target="#baja-content">Baja</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center search-actions">
+          <div class="input-group search-bar">
+            <input type="text" id="general-search-input" class="form-control" placeholder="Búsqueda..." />
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="administracion-content" class="tab-content-panel">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover squeegee-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Largo (mm)</th>
+                <th>Lado</th>
+                <th>Status</th>
+                <th>Barcode</th>
+                <th>QR</th>
+                <th>Ciclos actuales</th>
+                <th>Máximos</th>
+                <th>Fecha de llegada</th>
+                <th></th>
+              </tr>
+              <tr id="filter-row-admin">
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="0" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="1" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="2" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="3" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="4" placeholder="Filtrar"></td>
+                <td></td> <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="6" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="7" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-admin" data-column="8" placeholder="Filtrar"></td>
+                <td></td> </tr>
+            </thead>
+            <tbody>
+              </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="historial-content" class="tab-content-panel" style="display: none">
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-hover squeegee-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>ID</th>
+                <th>Barcode</th>
+                <th>Status</th>
+                <th>Responsable</th>
+                <th>Comentario</th>
+              </tr>
+              <tr id="filter-row-history">
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="0" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="1" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="2" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="3" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="4" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-history" data-column="5" placeholder="Filtrar"></td>
+              </tr>
+            </thead>
+            <tbody>
+              </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="registro-content" class="tab-content-panel" style="display: none">
+        <div class="card registration-card">
+          <div class="card-header" style="height: 35px; background-color: #b0bec5"></div>
+          <div class="card-body">
+            <h2 class="form-section-title">NUEVO REGISTRO</h2>
+            <form id="registroForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="largo" class="form-label">Largo (mm)</label>
+                    <input type="text" class="form-control" id="largo" placeholder="Value" maxlength="5" />
+                    <div id="largo-error" style="color: #dc3545; font-size: 0.875em; display: none;"></div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Lado</label>
+                    <div class="d-flex">
+                      <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" value="F" id="ladoF" checked />
+                        <label class="form-check-label" for="ladoF">F</label>
+                      </div>
+                      <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" value="R" id="ladoR" />
+                        <label class="form-check-label" for="ladoR">R</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Y" id="ladoY" />
+                        <label class="form-check-label" for="ladoY">Y</label>
+                      </div>
+                    </div>
+                    <div id="lado-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                      Por favor, seleccione un lado.
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="arrived_date" class="form-label">Fecha de llegada</label>
+                    <input type="date" class="form-control" id="arrived_date">
+                    <div id="arrived_date-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                      Por favor, seleccione una fecha.
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="ciclos-actuales" class="form-label">Ciclos actuales</label>
+                    <input type="text" class="form-control" id="ciclos-actuales" placeholder="Value" maxlength="6" />
+                    <div id="ciclos-actuales-error" style="color: #dc3545; font-size: 0.875em; display: none;"></div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="ciclos-permitidos" class="form-label">Ciclos permitidos</label>
+                    <input type="text" class="form-control" id="ciclos-permitidos" placeholder="Value" maxlength="6" />
+                    <div id="ciclos-permitidos-error" style="color: #dc3545; font-size: 0.875em; display: none;"></div>
+                  </div>
+                  <div class="text-end mt-4">
+                    <button type="submit" class="btn px-4 save-btn">
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div id="baja-content" class="tab-content-panel" style="display: none">
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-hover squeegee-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Largo (mm)</th>
+                <th>Lado</th>
+                <th>Status</th>
+                <th>Barcode</th>
+                <th>Ciclos completados</th>
+                <th>Máximos</th>
+                <th>Fecha de llegada</th>
+                <th>Fecha de baja</th>
+                <th>Responsable</th>
+                <th>Comentario</th>
+              </tr>
+              <tr id="filter-row-baja">
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="0" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="1" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="2" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="3" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="4" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="5" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="6" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="7" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="8" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="9" placeholder="Filtrar"></td>
+                <td><input type="text" class="form-control form-control-sm table-filter-baja" data-column="10" placeholder="Filtrar"></td>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+<div class="modal fade" id="editSqueegeeModal" tabindex="-1" aria-labelledby="editSqueegeeModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSqueegeeModalLabel">Editar Squeegee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSqueegeeForm">
+                    <input type="hidden" id="edit-sq-id">
+
+                    <div class="row">
+                        <div class="col-md-6 text-center">
+                            <h5>QR y Barcode</h5>
+                            <img id="edit-qr-code" src="" alt="QR Code" class="img-fluid mb-3" />
+                            <p id="edit-barcode" class="fw-bold">S-01-250-F</p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-current-cycles" class="form-label">Ciclos actuales</label>
+                                <input type="number" class="form-control" id="edit-current-cycles">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-max-cycles" class="form-label">Ciclos máximos</label>
+                                <input type="number" class="form-control" id="edit-max-cycles" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input status-check" type="radio" name="editStatus" id="edit-status-ok"
+                                            value="OK">
+                                        <label class="form-check-label" for="edit-status-ok">OK</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input status-check" type="radio" name="editStatus" id="edit-status-ng"
+                                            value="NG">
+                                        <label class="form-check-label" for="edit-status-ng">NG</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input status-check" type="radio" name="editStatus" id="edit-status-mant"
+                                            value="MANT.">
+                                        <label class="form-check-label" for="edit-status-mant">MANT.</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input status-check" type="radio" name="editStatus" id="edit-status-baj"
+                                            value="BAJA">
+                                        <label class="form-check-label" for="edit-status-baj">BAJA</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="history-section" style="display: none;">
+                        <hr />
+                        <h5>Registro de Historial</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-history-date" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="edit-history-date">
+                                <div id="edit-history-date-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    Por favor, ingrese una fecha.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="edit-history-time" class="form-label">Hora</label>
+                                <input type="time" class="form-control" id="edit-history-time">
+                                <div id="edit-history-time-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    Por favor, ingrese una hora.
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="edit-history-responsible" class="form-label">Responsable</label>
+                                <input type="text" class="form-control" id="edit-history-responsible" maxlength="5">
+                                <div id="edit-history-responsible-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    Por favor, ingrese un responsable.
+                                </div>
+                                <div id="edit-history-responsible-length-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    El responsable no debe exceder los 5 caracteres.
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="edit-history-comment" class="form-label">Comentario</label>
+                                <textarea class="form-control" id="edit-history-comment" rows="3" maxlength="45"></textarea>
+                                <div id="edit-history-comment-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    Por favor, ingrese un comentario.
+                                </div>
+                                <div id="edit-history-comment-length-error" style="color: #dc3545; font-size: 0.875em; display: none;">
+                                    El comentario no debe exceder los 45 caracteres.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveChangesBtn">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+  <footer class="footer-bar"></footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/JS/authFetch.js"></script>
+  <script src="/JS/squeegeeAdmin.js"></script>
+  <script src="/JS/squeegeeRegister.js"></script>
+</body>
+
+</html>
