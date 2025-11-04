@@ -11,6 +11,40 @@ document.addEventListener("DOMContentLoaded", () => {
   const bajaTableBody = document.querySelector("#baja-content table tbody");
   let searchTimeout;
 
+  // ==========================================================
+  //  --- CAMBIO 1: AÑADIR LA FUNCIÓN DE AYUDA (HELPER) ---
+  // ==========================================================
+  /**
+   * Esta función usa authFetch para cargar una imagen protegida por token.
+   * @param {HTMLImageElement} imgElement El elemento <img> que queremos cargar.
+   */
+  async function loadProtectedImage(imgElement) {
+      const url = imgElement.dataset.src; // Tomamos la URL del atributo data-src
+      if (!url) return;
+
+      try {
+          // 1. Usamos authFetch, que SÍ envía el token
+          const response = await authFetch(url);
+          if (!response.ok) throw new Error('No se pudo cargar la imagen QR');
+
+          // 2. Convertimos la respuesta en un "Blob" (un archivo en memoria)
+          const imageBlob = await response.blob();
+
+          // 3. Creamos una URL local para ese Blob
+          const imageObjectURL = URL.createObjectURL(imageBlob);
+
+          // 4. Asignamos esa URL local al 'src' de la imagen
+          imgElement.src = imageObjectURL;
+      } catch (error) {
+          console.error('Error al cargar imagen protegida:', url, error);
+          imgElement.alt = "Error al cargar QR"; // Mostramos un error en la imagen
+      }
+  }
+  // ==========================================================
+  //  FIN DEL CAMBIO 1
+  // ==========================================================
+
+
   /**
    * Filtra una tabla del lado del cliente, ocultando las filas que no coinciden.
    * @param {string} tableBodySelector - El selector CSS para el tbody de la tabla a filtrar.
@@ -96,12 +130,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const arrivedDate = stencil.st_arrived_date
                 ? new Date(stencil.st_arrived_date).toLocaleDateString("es-MX")
                 : " ";
+
+            // ==========================================================
+            //  --- CAMBIO 2: USAR data-src Y 'lazy-qr' EN LA TABLA ---
+            // ==========================================================
             const qrCellContent = stencil.st_bc
-                ? `<img src="/api/stencils/${stencil.st_id}/qr" alt="QR" class="table-qr" />`
+                ? `<img alt="Cargando QR..." class="table-qr lazy-qr" 
+                       data-src="/api/stencils/${stencil.st_id}/qr" />`
                 : ''; // Celda vacía si no hay barcode
 
-            // --- CORRECCIÓN AQUÍ ---
-            // Se agregó el '>' faltante después de <td
             tr.innerHTML = `
                 <td>${stencil.st_id}</td>
                 <td>${stencil.st_job || ""}</td>
@@ -123,10 +160,23 @@ document.addEventListener("DOMContentLoaded", () => {
                   </button>
                 </td>
             `;
-            // --- FIN DE LA CORRECCIÓN ---
+            // ==========================================================
+            //  FIN DEL CAMBIO 2
+            // ==========================================================
 
             adminTableBody.appendChild(tr);
         });
+
+        // ==========================================================
+        //  --- CAMBIO 2.1: LLAMAR AL HELPER DESPUÉS DEL LOOP ---
+        // ==========================================================
+        document.querySelectorAll('.lazy-qr').forEach(img => {
+            loadProtectedImage(img);
+        });
+        // ==========================================================
+        //  FIN DEL CAMBIO 2.1
+        // ==========================================================
+
     } catch (error) {
         console.error("No se pudieron cargar los stencils:", error);
 
@@ -253,9 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusCheckboxes = document.querySelectorAll(".status-check-stencil");
   let originalStatus = "";
 
-  // ==========================================================
-  //  CÓDIGO ACTUALIZADO: Limpiar Modal y Errores
-  // ==========================================================
+  // (Tu código de limpieza de modal está bien como está)
   editModalEl.addEventListener("hidden.bs.modal", () => {
     const editForm = document.getElementById("editForm");
     if (editForm) {
@@ -266,7 +314,6 @@ document.addEventListener("DOMContentLoaded", () => {
       historySection.style.display = "none";
     }
 
-    // --- ACTUALIZADO: Limpiar todos los mensajes de error ---
     const errorFields = [
       {
         inputId: "edit-history-date-stencil",
@@ -291,17 +338,13 @@ document.addEventListener("DOMContentLoaded", () => {
     errorFields.forEach((field) => {
       const inputEl = document.getElementById(field.inputId);
       const errorEl = document.getElementById(field.errorId);
-      const lengthErrorEl = document.getElementById(field.lengthErrorId); // Nuevo
+      const lengthErrorEl = document.getElementById(field.lengthErrorId); 
 
       if (inputEl) inputEl.classList.remove("is-invalid");
       if (errorEl) errorEl.style.display = "none";
-      if (lengthErrorEl) lengthErrorEl.style.display = "none"; // Nuevo
+      if (lengthErrorEl) lengthErrorEl.style.display = "none"; 
     });
-    // --- FIN DE LA ACTUALIZACIÓN ---
   });
-  // ==========================================================
-  //  FIN DEL CÓDIGO ACTUALIZADO
-  // ==========================================================
 
   function toggleHistorySection() {
     const newStatusIsNgOrMant =
@@ -341,9 +384,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.getElementById("edit-st-id").value = stencil.st_id;
       document.getElementById("edit-barcode").textContent = stencil.st_bc;
-      document.getElementById(
-        "edit-qr-code"
-      ).src = `/api/stencils/${stencil.st_id}/qr`;
+      
+      // ==========================================================
+      //  --- CAMBIO 3: USAR 'loadProtectedImage' EN EL MODAL ---
+      // ==========================================================
+      // document.getElementById("edit-qr-code").src = `/api/stencils/${stencil.st_id}/qr`; // <-- LÍNEA ANTIGUA
+      
+      const qrImgElement = document.getElementById("edit-qr-code");
+      qrImgElement.src = ""; // Placeholder
+      qrImgElement.alt = "Cargando QR...";
+      qrImgElement.dataset.src = `/api/stencils/${stencil.st_id}/qr`;
+      loadProtectedImage(qrImgElement);
+      // ==========================================================
+      //  FIN DEL CAMBIO 3
+      // ==========================================================
+
       document.getElementById("edit-current-cycles").value =
         stencil.st_current_us;
       document.getElementById("edit-max-cycles").value = stencil.st_mx_us;
@@ -359,17 +414,12 @@ document.addEventListener("DOMContentLoaded", () => {
       editModal.show();
     });
 
+  // (Tu lógica de guardar cambios 'saveChangesBtn' y validación están bien)
   document
     .getElementById("saveChangesBtn")
     .addEventListener("click", async () => {
       const stencilId = document.getElementById("edit-st-id").value;
-
-      // ==========================================================
-      //  CÓDIGO ACTUALIZADO: VALIDACIÓN CON LONGITUD
-      // ==========================================================
       let isValid = true;
-
-      // --- 1. Definir los campos y ocultar todos los errores primero ---
       const fieldsToValidate = [
         {
           inputId: "edit-history-date-stencil",
@@ -392,26 +442,20 @@ document.addEventListener("DOMContentLoaded", () => {
           maxLength: 45,
         },
       ];
-
       fieldsToValidate.forEach((field) => {
         const inputEl = document.getElementById(field.inputId);
         const errorEl = document.getElementById(field.errorId);
         const lengthErrorEl = document.getElementById(field.lengthErrorId);
-
         if (inputEl) inputEl.classList.remove("is-invalid");
         if (errorEl) errorEl.style.display = "none";
         if (lengthErrorEl) lengthErrorEl.style.display = "none";
       });
-
-      // --- 2. Validar campos (SOLO si la sección está visible) ---
       if (historySection.style.display === "block") {
         fieldsToValidate.forEach((field) => {
           const inputEl = document.getElementById(field.inputId);
           const errorEl = document.getElementById(field.errorId);
           const lengthErrorEl = document.getElementById(field.lengthErrorId);
           const value = inputEl.value;
-
-          // Primero, checar si está vacío
           if (
             !value ||
             (inputEl.type === "text" && !value.trim()) ||
@@ -421,30 +465,23 @@ document.addEventListener("DOMContentLoaded", () => {
             errorEl.style.display = "block";
             isValid = false;
           }
-          // Si no está vacío, checar la longitud
           else if (field.maxLength && value.length > field.maxLength) {
             inputEl.classList.add("is-invalid");
-            lengthErrorEl.style.display = "block"; // Muestra error de longitud
+            lengthErrorEl.style.display = "block"; 
             isValid = false;
           }
         });
 
         if (!isValid) {
-          return; // Detiene la función si algo faltó
+          return; 
         }
       }
-      // ==========================================================
-      //  FIN DEL CÓDIGO ACTUALIZADO
-      // ==========================================================
-
       const dataToUpdate = {
         currentCycles: document.getElementById("edit-current-cycles").value,
         maxCycles: document.getElementById("edit-max-cycles").value,
         status: document.querySelector('input[name="editStatus"]:checked')
           .value,
       };
-
-      // Si la sección es visible, los datos ya están validados (incl. longitud)
       if (historySection.style.display === "block") {
         const dateValue = document.getElementById(
           "edit-history-date-stencil"
@@ -457,47 +494,41 @@ document.addEventListener("DOMContentLoaded", () => {
           date: new Date(fullTimestamp),
           responsible: document
             .getElementById("edit-history-responsible-stencil")
-            .value.trim(), // Usamos trim
+            .value.trim(), 
           comment: document
             .getElementById("edit-history-comment-stencil")
-            .value.trim(), // Usamos trim
+            .value.trim(), 
         };
       }
-
       const response = await authFetch(`/api/stencils/${stencilId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToUpdate),
       });
-
       if (response.ok) {
         alert("Stencil actualizado con éxito");
         editModal.hide();
-        loadStencils(); // Recarga la tabla principal
-        loadHistory(); // Recarga el historial por si acaso
+        loadStencils(); 
+        loadHistory(); 
       } else {
         alert("Error al actualizar el stencil");
       }
     });
 
-  // --- LÓGICA DE NAVEGACIÓN ENTRE PESTAÑAS ---
+  // --- LÓGICA DE NAVEGACIÓN ENTRE PESTAÑAS (Sin cambios) ---
   const tabs = document.querySelectorAll("#stencil-tabs .nav-link");
   const contentPanels = document.querySelectorAll(".tab-content-panel");
-
   tabs.forEach((tab) => {
     tab.addEventListener("click", (event) => {
       event.preventDefault();
-
       tabs.forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
-
       const targetId = tab.dataset.target;
       const normalizedTarget = targetId
         ? targetId.startsWith("#")
           ? targetId.slice(1)
           : targetId
         : "";
-
       contentPanels.forEach((panel) => {
         if (panel.id === normalizedTarget) {
           panel.style.display = "block";
@@ -513,18 +544,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // --- LÓGICA PARA FILTRAR LA TABLA DE ADMINISTRACIÓN POR COLUMNA ---
+  // --- LÓGICA PARA FILTROS (Sin cambios) ---
   function applyAdminFilters() {
     const tableBody = document.querySelector(
       "#administracion-content .stencil-table tbody"
     );
     if (!tableBody) return;
-
     const filterInputs = document.querySelectorAll(
       "#filter-row-admin .table-filter-admin"
     );
     const rows = tableBody.querySelectorAll("tr");
-
     const filters = {};
     filterInputs.forEach((input) => {
       const columnIndex = input.dataset.column;
@@ -533,11 +562,9 @@ document.addEventListener("DOMContentLoaded", () => {
         filters[columnIndex] = filterValue;
       }
     });
-
     rows.forEach((row) => {
       let isVisible = true;
       const cells = row.querySelectorAll("td");
-
       for (const columnIndex in filters) {
         const cellValue = cells[columnIndex]?.textContent.toUpperCase() || "";
         if (!cellValue.includes(filters[columnIndex])) {
@@ -548,17 +575,13 @@ document.addEventListener("DOMContentLoaded", () => {
       row.style.display = isVisible ? "" : "none";
     });
   }
-
-  // --- LÓGICA PARA FILTRAR LA TABLA DE BAJA POR COLUMNA ---
   function applyBajaFilters() {
     const tableBody = document.querySelector("#baja-content table tbody");
     if (!tableBody) return;
-
     const filterInputs = document.querySelectorAll(
       "#filter-row-baja .table-filter-baja"
     );
     const rows = tableBody.querySelectorAll("tr");
-
     const filters = {};
     filterInputs.forEach((input) => {
       const columnIndex = input.dataset.column;
@@ -567,11 +590,9 @@ document.addEventListener("DOMContentLoaded", () => {
         filters[columnIndex] = filterValue;
       }
     });
-
     rows.forEach((row) => {
       let isVisible = true;
       const cells = row.querySelectorAll("td");
-
       for (const columnIndex in filters) {
         const cellValue = cells[columnIndex]?.textContent.toUpperCase() || "";
         if (!cellValue.includes(filters[columnIndex])) {
@@ -582,23 +603,18 @@ document.addEventListener("DOMContentLoaded", () => {
       row.style.display = isVisible ? "" : "none";
     });
   }
-
   document
     .querySelectorAll("#filter-row-baja .table-filter-baja")
     .forEach((input) => {
       input.addEventListener("input", applyBajaFilters);
     });
-
-  // --- LÓGICA PARA FILTRAR LA TABLA DE HISTORIAL POR COLUMNA ---
   function applyHistoryFilters() {
     const tableBody = document.querySelector("#historial-content table tbody");
     if (!tableBody) return;
-
     const filterInputs = document.querySelectorAll(
       "#filter-row-history .table-filter-history"
     );
     const rows = tableBody.querySelectorAll("tr");
-
     const filters = {};
     filterInputs.forEach((input) => {
       const columnIndex = input.dataset.column;
@@ -607,11 +623,9 @@ document.addEventListener("DOMContentLoaded", () => {
         filters[columnIndex] = filterValue;
       }
     });
-
     rows.forEach((row) => {
       let isVisible = true;
       const cells = row.querySelectorAll("td");
-
       for (const columnIndex in filters) {
         const cellValue = cells[columnIndex]?.textContent.toUpperCase() || "";
         if (!cellValue.includes(filters[columnIndex])) {
@@ -622,14 +636,11 @@ document.addEventListener("DOMContentLoaded", () => {
       row.style.display = isVisible ? "" : "none";
     });
   }
-
-  // Listeners para filtros
   document
     .querySelectorAll("#filter-row-admin .table-filter-admin")
     .forEach((input) => {
       input.addEventListener("input", applyAdminFilters);
     });
-
   document
     .querySelectorAll("#filter-row-history .table-filter-history")
     .forEach((input) => {

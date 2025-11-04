@@ -53,7 +53,32 @@ document.addEventListener('DOMContentLoaded', () => {
         recipePN.textContent = '';
         return;
     }
+    /**
+     * Esta función usa authFetch para cargar una imagen protegida por token.
+     * @param {HTMLImageElement} imgElement El elemento <img> que queremos cargar.
+     */
+    async function loadProtectedImage(imgElement) {
+        const url = imgElement.dataset.src; // Tomamos la URL del atributo data-src
+        if (!url) return;
 
+        try {
+            // 1. Usamos authFetch, que SÍ envía el token
+            const response = await authFetch(url);
+            if (!response.ok) throw new Error('No se pudo cargar la imagen QR');
+
+            // 2. Convertimos la respuesta en un "Blob" (un archivo en memoria)
+            const imageBlob = await response.blob();
+
+            // 3. Creamos una URL local para ese Blob
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+
+            // 4. Asignamos esa URL local al 'src' de la imagen
+            imgElement.src = imageObjectURL;
+        } catch (error) {
+            console.error('Error al cargar imagen protegida:', url, error);
+            imgElement.alt = "Error al cargar QR"; // Mostramos un error en la imagen
+        }
+    }
     // --- Funciones de Utilidad ---
      function showEditError(fieldKey, message) {
         if (editErrorDivs[fieldKey]) {
@@ -113,77 +138,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Funciones para Poblar Tablas ---
     // (populateStencilsTable, populateSqueegeesTable, populatePlatesTable - Sin cambios)
-    function populateStencilsTable(stencils) {
-        stencilsTableBody.innerHTML = '';
-        if (!stencils || stencils.length === 0) {
-            stencilsTableBody.innerHTML = '<tr><td colspan="8">No se encontraron stencils compatibles.</td></tr>';
-            return;
-        }
-        stencils.forEach((item, index) => {
-             const qrCodeUrl = item.st_bc ? `/api/stencils/${item.st_id}/qr` : ''; // URL del QR si existe barcode
-             const qrImage = qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR" class="table-qr">` : ''; // Imagen si hay URL
-
-            const row = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.st_bc || 'N/A'}</td>
-                    <td>${item.st_no_serie || 'N/A'}</td>
-                    <td>${item.st_ver || 'N/A'}</td>
-                    <td>${item.thickness || 'N/A'}</td>
-                    <td>${item.st_status || 'N/A'}</td>
-                     <td>${qrImage}</td>
-                    <td></td>
-                </tr>
-            `;
-            stencilsTableBody.innerHTML += row;
-        });
+function populateStencilsTable(stencils) {
+    stencilsTableBody.innerHTML = '';
+    if (!stencils || stencils.length === 0) {
+        stencilsTableBody.innerHTML = '<tr><td colspan="8">No se encontraron stencils compatibles.</td></tr>';
+        return;
     }
+    stencils.forEach((item, index) => {
+        // --- CAMBIO AQUÍ ---
+        const qrCodeUrl = item.st_bc ? `/api/stencils/${item.st_id}/qr` : '';
+        // Usamos data-src y la clase 'lazy-qr'
+        const qrImage = qrCodeUrl ? `<img alt="Cargando QR..." class="table-qr lazy-qr" data-src="${qrCodeUrl}">` : '';
+        // --- FIN DEL CAMBIO ---
 
-    function populateSqueegeesTable(squeegees) {
-        squeegeesTableBody.innerHTML = '';
-         if (!squeegees || squeegees.length === 0) {
-            squeegeesTableBody.innerHTML = '<tr><td colspan="6">No se encontraron squeegees compatibles.</td></tr>';
-            return;
-        }
-        squeegees.forEach((item, index) => {
-             const qrCodeUrl = item.sq_bc ? `/api/squeegees/${item.sq_id}/qr` : '';
-             const qrImage = qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR" class="table-qr">` : '';
-            const row = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.sq_bc || 'N/A'}</td>
-                    <td>${item.sq_length || 'N/A'}</td>
-                    <td>${item.sq_status || 'N/A'}</td>
-                    <td>${qrImage}</td>
-                    <td></td>
-                </tr>
-            `;
-            squeegeesTableBody.innerHTML += row;
-        });
-    }
+        const row = `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${item.st_bc || 'N/A'}</td>
+                <td>${item.st_no_serie || 'N/A'}</td>
+                <td>${item.st_ver || 'N/A'}</td>
+                <td>${item.thickness || 'N/A'}</td>
+                <td>${item.st_status || 'N/A'}</td>
+                <td>${qrImage}</td>
+                <td></td>
+            </tr>
+        `;
+        stencilsTableBody.innerHTML += row;
+    });
 
-    function populatePlatesTable(plates) {
-        platesTableBody.innerHTML = '';
-         if (!plates || plates.length === 0) {
-            platesTableBody.innerHTML = '<tr><td colspan="6">No se encontraron plates compatibles.</td></tr>';
-            return;
-        }
-        plates.forEach((item, index) => {
-            const qrCodeUrl = item.pl_bc ? `/api/plates/${item.pl_id}/qr` : '';
-            const qrImage = qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR" class="table-qr">` : '';
-            const row = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.pl_bc || 'N/A'}</td>
-                    <td>${item.pl_no_serie || 'N/A'}</td>
-                    <td>${item.pl_status || 'N/A'}</td>
-                    <td>${qrImage}</td>
-                    <td></td>
-                </tr>
-            `;
-            platesTableBody.innerHTML += row;
-        });
+    // --- CAMBIO AQUÍ: Llamar al helper después de llenar la tabla ---
+    stencilsTableBody.querySelectorAll('.lazy-qr').forEach(img => loadProtectedImage(img));
+}
+
+function populateSqueegeesTable(squeegees) {
+    squeegeesTableBody.innerHTML = '';
+    if (!squeegees || squeegees.length === 0) {
+        squeegeesTableBody.innerHTML = '<tr><td colspan="6">No se encontraron squeegees compatibles.</td></tr>';
+        return;
     }
+    squeegees.forEach((item, index) => {
+        // --- CAMBIO AQUÍ ---
+        const qrCodeUrl = item.sq_bc ? `/api/squeegees/${item.sq_id}/qr` : '';
+        // Usamos data-src y la clase 'lazy-qr'
+        const qrImage = qrCodeUrl ? `<img alt="Cargando QR..." class="table-qr lazy-qr" data-src="${qrCodeUrl}">` : '';
+        // --- FIN DEL CAMBIO ---
+
+        const row = `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${item.sq_bc || 'N/A'}</td>
+                <td>${item.sq_length || 'N/A'}</td>
+                <td>${item.sq_status || 'N/A'}</td>
+                <td>${qrImage}</td>
+                <td></td>
+            </tr>
+        `;
+        squeegeesTableBody.innerHTML += row;
+    });
+
+    // --- CAMBIO AQUÍ: Llamar al helper después de llenar la tabla ---
+    squeegeesTableBody.querySelectorAll('.lazy-qr').forEach(img => loadProtectedImage(img));
+}
+
+function populatePlatesTable(plates) {
+    platesTableBody.innerHTML = '';
+    if (!plates || plates.length === 0) {
+        platesTableBody.innerHTML = '<tr><td colspan="6">No se encontraron plates compatibles.</td></tr>';
+        return;
+    }
+    plates.forEach((item, index) => {
+        // --- CAMBIO AQUÍ ---
+        const qrCodeUrl = item.pl_bc ? `/api/plates/${item.pl_id}/qr` : '';
+        // Usamos data-src y la clase 'lazy-qr'
+        const qrImage = qrCodeUrl ? `<img alt="Cargando QR..." class="table-qr lazy-qr" data-src="${qrCodeUrl}">` : '';
+        // --- FIN DEL CAMBIO ---
+
+        const row = `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${item.pl_bc || 'N/A'}</td>
+                <td>${item.pl_no_serie || 'N/A'}</td>
+                <td>${item.pl_status || 'N/A'}</td>
+                <td>${qrImage}</td>
+                <td></td>
+            </tr>
+        `;
+        platesTableBody.innerHTML += row;
+    });
+
+    // --- CAMBIO AQUÍ: Llamar al helper después de llenar la tabla ---
+    platesTableBody.querySelectorAll('.lazy-qr').forEach(img => loadProtectedImage(img));
+}
 
 
     // --- LÓGICA DEL MODAL DE EDICIÓN ---

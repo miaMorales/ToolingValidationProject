@@ -34,7 +34,7 @@ async function authFetch(url, options = {}) {
         localStorage.removeItem('userPrivilege');
         localStorage.removeItem('userName');
         // Redirigir a la página de inicio
-        window.location.href = '/index.html'; 
+        window.location.replace = '/index.html'; 
         // Lanzar un error para detener la ejecución del código que llamó a authFetch
         throw new Error('No autorizado.'); 
     }

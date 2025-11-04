@@ -6,14 +6,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const historyTableBody = document.querySelector("#historial-content .plate-table tbody");
     const bajaTableBody = document.querySelector("#baja-content .plate-table tbody");
     let searchTimeout;
-    
+
     // --- Lógica del Modal de Edición ---
     const editModalEl = document.getElementById("editPlateModal");
     const editModal = new bootstrap.Modal(editModalEl);
     const historySection = document.getElementById("history-section-plate");
     const statusCheckboxes = document.querySelectorAll(".status-check-plate");
     let originalStatus = "";
+    // En plateAdmin.js
 
+    /**
+     * Esta función usa authFetch para cargar una imagen protegida por token.
+     * @param {HTMLImageElement} imgElement El elemento <img> que queremos cargar.
+     */
+    async function loadProtectedImage(imgElement) {
+        const url = imgElement.dataset.src; // Tomamos la URL del atributo data-src
+        if (!url) return;
+
+        try {
+            // 1. Usamos authFetch, que SÍ envía el token
+            const response = await authFetch(url);
+            if (!response.ok) throw new Error('No se pudo cargar la imagen QR');
+
+            // 2. Convertimos la respuesta en un "Blob" (un archivo en memoria)
+            const imageBlob = await response.blob();
+
+            // 3. Creamos una URL local para ese Blob
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+
+            // 4. Asignamos esa URL local al 'src' de la imagen
+            imgElement.src = imageObjectURL;
+        } catch (error) {
+            console.error('Error al cargar imagen protegida:', url, error);
+            imgElement.alt = "Error al cargar QR"; // Mostramos un error en la imagen
+        }
+    }
     // ==========================================================
     //  NUEVO CÓDIGO: Limpieza de Modal al Cerrar
     // ==========================================================
@@ -24,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         document.getElementById("edit-status-ok").checked = true; // Estado por defecto
-        
+
         if (historySection) {
             historySection.style.display = "none"; // Oculta historial
         }
@@ -33,15 +60,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const errorFields = [
             { inputId: "edit-history-date-plate", errorId: "edit-history-date-error" },
             { inputId: "edit-history-time-plate", errorId: "edit-history-time-error" },
-            { 
-              inputId: "edit-history-responsible-plate", 
-              errorId: "edit-history-responsible-error", 
-              lengthErrorId: "edit-history-responsible-length-error" 
+            {
+                inputId: "edit-history-responsible-plate",
+                errorId: "edit-history-responsible-error",
+                lengthErrorId: "edit-history-responsible-length-error"
             },
-            { 
-              inputId: "edit-history-comment-plate", 
-              errorId: "edit-history-comment-error", 
-              lengthErrorId: "edit-history-comment-length-error" 
+            {
+                inputId: "edit-history-comment-plate",
+                errorId: "edit-history-comment-error",
+                lengthErrorId: "edit-history-comment-length-error"
             },
         ];
 
@@ -96,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     applyGeneralClientSideFilter('#baja-content .plate-table tbody', searchTerm);
                     break;
             }
-        }, 500); 
+        }, 500);
     });
 
     function toggleHistorySection() {
@@ -117,76 +144,93 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("edit-history-time-plate").value = new Date().toTimeString().slice(0, 5);
         }
     }
-    
+
     statusCheckboxes.forEach((checkbox) =>
         checkbox.addEventListener("change", toggleHistorySection)
     );
 
     // --- Funciones de Carga de Datos ---
-    
-    async function loadPlates() {
-        try {
-            let url = "/api/plates";
+
+async function loadPlates() {
+    try {
+        let url = "/api/plates";
+
+        const response = await authFetch(url);
+        if (!response.ok) throw new Error("Error al cargar plates");
+
+        const plates = await response.json();
+        if (!adminTableBody) return;
+        adminTableBody.innerHTML = "";
+
+        plates.forEach((plate) => {
+            const tr = document.createElement("tr");
+            if (plate.pl_status && (plate.pl_status.trim() === "NG" || plate.pl_status.trim() === "BAJA")) {
+                tr.classList.add("table-danger");
+            }
+            if (plate.pl_status && plate.pl_status.trim() === "MANT.") {
+                tr.classList.add("table-warning");
+            }
+
+            const arrivedDate = plate.pl_arrived_date ? new Date(plate.pl_arrived_date).toLocaleDateString("es-MX") : " ";
+
+            // ==========================================================
+            //  ¡¡¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE!!!
+            //  Cambiamos 'src' por 'data-src'
+            //  Añadimos la clase 'lazy-qr'
+            // ==========================================================
+            tr.innerHTML = `
+                <td>${plate.pl_id}</td>
+                <td>${plate.pl_job || ""}</td>
+                <td>${plate.supp_name || ""}</td>
+                <td>${plate.model_name || ""}</td>
+                <td>${plate.pn_pcb || ""}</td>
+                <td>${plate.revision || ""}</td>
+                <td>${plate.pl_status || ""}</td>
+                <td>${plate.pl_bc || ""}</td>
+                <td>
+                    <img alt="Cargando QR..." class="table-qr lazy-qr" 
+                         data-src="/api/plates/${plate.pl_id}/qr" />
+                </td>
+                <td>${plate.pl_current_us || 0}</td>
+                <td>${plate.pl_mx_us || 0}</td>
+                <td>${arrivedDate}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${plate.pl_id}">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                </td>
+            `;
+            // ==========================================================
+            //  FIN DEL CAMBIO
+            // ==========================================================
             
-            const response = await authFetch(url);
-            if (!response.ok) throw new Error("Error al cargar plates");
+            adminTableBody.appendChild(tr);
+        });
 
-            const plates = await response.json();
-            if (!adminTableBody) return;
-            adminTableBody.innerHTML = "";
+        // ¡Ahora este código SÍ encontrará las imágenes y las cargará!
+        document.querySelectorAll('.lazy-qr').forEach(img => {
+            loadProtectedImage(img);
+        });
 
-            plates.forEach((plate) => {
-                const tr = document.createElement("tr");
-                if (plate.pl_status && (plate.pl_status.trim() === "NG" || plate.pl_status.trim() === "BAJA")) {
-                    tr.classList.add("table-danger");
-                }
-                if (plate.pl_status && plate.pl_status.trim() === "MANT.") {
-                    tr.classList.add("table-warning");
-                }
-               
-
-                const arrivedDate = plate.pl_arrived_date ? new Date(plate.pl_arrived_date).toLocaleDateString("es-MX") : " ";
-                
-                tr.innerHTML = `
-                    <td>${plate.pl_id}</td>
-                    <td>${plate.pl_job || ""}</td>
-                    <td>${plate.supp_name || ""}</td>
-                    <td>${plate.model_name || ""}</td>
-                    <td>${plate.pn_pcb || ""}</td>
-                    <td>${plate.revision || ""}</td>
-                    <td>${plate.pl_status || ""}</td>
-                    <td>${plate.pl_bc || ""}</td>
-                    <td><img src="/api/plates/${plate.pl_id}/qr" alt="QR" class="table-qr" /></td>
-                    <td>${plate.pl_current_us || 0}</td>
-                    <td>${plate.pl_mx_us || 0}</td>
-                    <td>${arrivedDate}</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${plate.pl_id}">
-                        <i class="bi bi-pencil-square"></i>
-                      </button>
-                    </td>
-                `;
-                adminTableBody.appendChild(tr);
-            });
-        } catch (error) {
-            console.error("No se pudieron cargar los plates:", error);
-            if (adminTableBody) adminTableBody.innerHTML = '<tr><td colspan="14" class="text-center">Error al cargar los datos.</td></tr>';
-        }
+    } catch (error) {
+        console.error("No se pudieron cargar los plates:", error);
+        if (adminTableBody) adminTableBody.innerHTML = '<tr><td colspan="14" class="text-center">Error al cargar los datos.</td></tr>';
     }
+}
 
     async function loadHistory() {
         try {
             const response = await authFetch("/api/plates/history");
             if (!response.ok) throw new Error("Error al cargar el historial");
-            
+
             const history = await response.json();
             const historyTableBody = document.querySelector("#historial-content .plate-table tbody");
             if (!historyTableBody) return;
             historyTableBody.innerHTML = "";
-            
+
             history.forEach((record) => {
                 const formattedDate = new Date(record.pl_h_date).toLocaleString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });
-                
+
                 // --- NUEVO: Formateo de comentarios ---
                 const comment = record.pl_h_com || '';
                 const formattedComment = comment
@@ -209,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (historyTableBody) historyTableBody.innerHTML = '<tr><td colspan="6">Error al cargar el historial.</td></tr>';
         }
     }
-    
+
     async function loadBajaPlates() {
         try {
             const response = await authFetch("/api/plates/baja");
@@ -218,13 +262,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const bajaPlates = await response.json();
             if (!bajaTableBody) return;
             bajaTableBody.innerHTML = "";
-            
+
             bajaPlates.forEach((plate) => {
-                const arrivedDate = plate.pl_arrived_date 
-                ? new Date(plate.pl_arrived_date).toLocaleDateString("es-MX")
-                : " ";
+                const arrivedDate = plate.pl_arrived_date
+                    ? new Date(plate.pl_arrived_date).toLocaleDateString("es-MX")
+                    : " ";
                 const bajaDate = new Date(plate.pl_baja_date).toLocaleDateString("es-MX");
-                
+
                 bajaTableBody.innerHTML += `
                     <tr>
                         <td>${plate.pl_id}</td>
@@ -251,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- Event Listeners de Modal y Guardado ---
-    
+
     document.querySelector("#administracion-content .plate-table tbody").addEventListener("click", async (event) => {
         const editButton = event.target.closest(".edit-btn");
         if (!editButton) return;
@@ -265,7 +309,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Rellenar Modal
         document.getElementById("edit-pl-id").value = plate.pl_id;
         document.getElementById("edit-barcode").textContent = plate.pl_bc;
-        document.getElementById("edit-qr-code").src = `/api/plates/${plate.pl_id}/qr`;
+        const qrImgElement = document.getElementById("edit-qr-code");
+        qrImgElement.src = ""; // Pon un placeholder o déjalo vacío
+        qrImgElement.alt = "Cargando QR...";
+        qrImgElement.dataset.src = `/api/plates/${plate.pl_id}/qr`; // Asigna la URL al data-src
+
+        // Llama a tu nueva función de ayuda
+        loadProtectedImage(qrImgElement);
         document.getElementById("edit-current-cycles").value = plate.pl_current_us;
         document.getElementById("edit-max-cycles").value = plate.pl_mx_us;
 
@@ -288,17 +338,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const fieldsToValidate = [
             { inputId: "edit-history-date-plate", errorId: "edit-history-date-error" },
             { inputId: "edit-history-time-plate", errorId: "edit-history-time-error" },
-            { 
-              inputId: "edit-history-responsible-plate", 
-              errorId: "edit-history-responsible-error", 
-              lengthErrorId: "edit-history-responsible-length-error", 
-              maxLength: 5 
+            {
+                inputId: "edit-history-responsible-plate",
+                errorId: "edit-history-responsible-error",
+                lengthErrorId: "edit-history-responsible-length-error",
+                maxLength: 5
             },
-            { 
-              inputId: "edit-history-comment-plate", 
-              errorId: "edit-history-comment-error", 
-              lengthErrorId: "edit-history-comment-length-error", 
-              maxLength: 45
+            {
+                inputId: "edit-history-comment-plate",
+                errorId: "edit-history-comment-error",
+                lengthErrorId: "edit-history-comment-length-error",
+                maxLength: 45
             },
         ];
 
@@ -333,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Check length
                 else if (field.maxLength && value.length > field.maxLength) {
                     inputEl.classList.add("is-invalid");
-                    lengthErrorEl.style.display = "block"; 
+                    lengthErrorEl.style.display = "block";
                     isValid = false;
                 }
             });
@@ -383,7 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // --- Lógica de Navegación de Pestañas ---
-    const tabs = document.querySelectorAll("#plate-tabs .nav-link"); 
+    const tabs = document.querySelectorAll("#plate-tabs .nav-link");
     const contentPanels = document.querySelectorAll(".tab-content-panel");
 
     tabs.forEach((tab) => {
@@ -413,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function applyAdminFilters() {
         const tableBody = document.querySelector(
-          "#administracion-content .plate-table tbody" 
+            "#administracion-content .plate-table tbody"
         );
         if (!tableBody) return;
 
@@ -422,25 +472,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const filters = {};
         filterInputs.forEach((input) => {
-          const columnIndex = input.dataset.column;
-          const filterValue = input.value.toUpperCase();
-          if (filterValue) {
-            filters[columnIndex] = filterValue;
-          }
+            const columnIndex = input.dataset.column;
+            const filterValue = input.value.toUpperCase();
+            if (filterValue) {
+                filters[columnIndex] = filterValue;
+            }
         });
 
         rows.forEach((row) => {
-          let isVisible = true;
-          const cells = row.querySelectorAll("td");
+            let isVisible = true;
+            const cells = row.querySelectorAll("td");
 
-          for (const columnIndex in filters) {
-            const cellValue = cells[columnIndex]?.textContent.toUpperCase() || "";
-            if (!cellValue.includes(filters[columnIndex])) {
-              isVisible = false;
-              break;
+            for (const columnIndex in filters) {
+                const cellValue = cells[columnIndex]?.textContent.toUpperCase() || "";
+                if (!cellValue.includes(filters[columnIndex])) {
+                    isVisible = false;
+                    break;
+                }
             }
-          }
-          row.style.display = isVisible ? "" : "none";
+            row.style.display = isVisible ? "" : "none";
         });
     }
 
@@ -527,6 +577,8 @@ document.addEventListener("DOMContentLoaded", () => {
         input.addEventListener("input", applyAdminFilters);
     });
 
-    
+
     loadPlates(); // Carga inicial
+    // 1. Define la función de logout
+
 });

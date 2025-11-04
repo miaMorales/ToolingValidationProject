@@ -19,7 +19,7 @@ function verifyToken(req, res, next) {
     // 2. Verificar el token
     try {
         const payload = jwt.verify(token, JWT_SECRET);
-        
+
         // 3. Si es válido, guardar los datos del usuario en el objeto 'req'
         // para que las siguientes funciones (controladores) puedan usarlo.
         req.user = payload; // req.user ahora tiene { name, no_employee, privilege }
@@ -38,28 +38,35 @@ function verifyToken(req, res, next) {
 function checkRole(allowedPrivileges) {
     return (req, res, next) => {
         if (!req.user || req.user.privilege === undefined) {
-             return res.status(403).json({ message: 'No se pudo verificar el privilegio.' });
+            return res.status(403).json({ message: 'No se pudo verificar el privilegio.' });
         }
 
-        const userPrivilege = req.user.privilege; // Ej. 0, 1, o 2
-
+        // --- CAMBIO AQUÍ ---
+        // Convertimos el privilegio del token (que puede ser "0") a un NÚMERO
+        const userPrivilege = parseInt(req.user.privilege, 10);
+        // --- FIN DEL CAMBIO ---
+        console.log(`[AUTH GUARD] Verificando token. 'privilege' leído del token: ${userPrivilege} (Tipo: ${typeof userPrivilege})`);
         if (allowedPrivileges.includes(userPrivilege)) {
-            next(); // El usuario tiene el privilegio, continuar
+            // El usuario tiene el privilegio, continuar
+            // ej. [0].includes(0) -> true
+            next();
         } else {
-            console.warn(`[AUTH] Acceso denegado para ${req.user.name}. Rol ${userPrivilege} no autorizado.`);
-            res.status(403).json({ message: 'Acceso prohibido. No tienes los permisos necesarios.' }); // 403 Forbidden
+            // El usuario no tiene el privilegio
+            // ej. [0].includes(2) -> false
+            console.warn(`[AUTH] Acceso denegado para ${req.user.name}. Rol ${userPrivilege} no autorizado. Se esperaba uno de: ${allowedPrivileges}`);
+            res.status(403).json({ message: 'Acceso prohibido. No tienes los permisos necesarios.' });
         }
     };
 }
 
 // Roles
 const soloAdmin = checkRole([0]); // 0 = Admin
-const adminYTécnico = checkRole([0, 1]); // 0 = Admin, 1 = Tecnico
+const adminYTecnico = checkRole([0, 1]); // 0 = Admin, 1 = Tecnico
 const todosLogueados = checkRole([0, 1, 2]); // Cualquiera que tenga token
 
 module.exports = {
     verifyToken,
     soloAdmin,
-    adminYTécnico,
+    adminYTecnico,
     todosLogueados
 };

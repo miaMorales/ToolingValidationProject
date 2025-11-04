@@ -13,7 +13,20 @@ async function handleScan(req, res) {
 
 async function handleLog(req, res) {
     try {
-        await validationService.logProduction(req.body);
+        // 1. Obtenemos los datos del frontend (lo que mandaste)
+        const frontendData = req.body;
+
+        // 2. Obtenemos el ID del usuario del TOKEN (¡Esto es seguro!)
+        //    (El middleware 'verifyToken' ya puso 'req.user' aquí)
+        const employeeNumber = req.user.no_employee;
+        
+        // 3. Pasamos AMBOS datos al servicio
+        //    (Añadimos el employeeNumber a los datos)
+        await validationService.logProduction({
+            ...frontendData, // Esto copia: line, context, barcodes
+            userEmployee: employeeNumber // <-- ¡Aquí va el dato seguro!
+        });
+
         res.status(201).json({ success: true, message: 'Producción registrada con éxito.' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error al registrar la producción.' });

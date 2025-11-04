@@ -2,7 +2,7 @@
 
 const { findByEmployeeNumberCredentials } = require('../services/user.service');
 const jwt = require('jsonwebtoken'); 
-const JWT_SECRET = process.env.JWT_SECRET || 'miclavesecreta123'; 
+const JWT_SECRET = 'SMTToolingValidationSecretKey'; 
 
 async function login(req, res) {
   const { no_employee, password } = req.body;
@@ -25,7 +25,7 @@ async function login(req, res) {
       no_employee: user.no_employee,
       privilege: user.privilege 
     };
-
+  console.log(`[AUTH] Creando token. 'privilege' desde la BD es: ${user.privilege} (Tipo: ${typeof user.privilege})`);  
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
     
     console.log(`[AUTH] Éxito: No. Empleado '${clean_no_employee}' autenticado (Usuario: ${user.name}). Privilegio: ${user.privilege}`);

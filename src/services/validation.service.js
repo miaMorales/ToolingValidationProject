@@ -80,13 +80,18 @@ async function validateScan(step, barcode, context) {
 }
 
 async function logProduction(logData) {
-    const { line, context, barcodes, user } = logData;
+    // 1. Descomponemos los datos que nos pasó el CONTROLLER
+    //    'user' (el inseguro) ya no existe, ahora tenemos 'userEmployee'
+    const { line, context, barcodes, userEmployee } = logData; 
+    
     const { pn_pcb, model_side } = context;
 
+    // ... (la lógica para buscar model_name no cambia) ...
     const modelNameQuery = 'SELECT model_name FROM models WHERE pn_pcb = $1 LIMIT 1';
     const modelNameResult = await pool.query(modelNameQuery, [pn_pcb]);
     const model_name = modelNameResult.rows[0]?.model_name || 'N/A';
 
+    // 2. Modificamos la consulta para usar el dato nuevo
     const query = `
         INSERT INTO production_log 
         (line_number, pn_pcb, model_name, model_side, stencil_bc, squeegee_f_bc, squeegee_r_bc, squeegee_y_bc, plate_bc, pasta_lot, username)
@@ -103,7 +108,7 @@ async function logProduction(logData) {
         barcodes.squeegee_y || null,
         barcodes.plate,
         barcodes.pasta,
-        user || 'default_user'
+        userEmployee // <-- 3. Usamos el número de empleado seguro
     ];
     await pool.query(query, params);
     return { success: true };

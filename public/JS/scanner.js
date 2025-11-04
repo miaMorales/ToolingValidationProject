@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     line: state.line, context: state.context, barcodes: state.barcodes,
-                    user: 'alma.morales' // Placeholder
+                
                 })
             });
             if (!response.ok) throw new Error('No se pudo guardar el registro.');

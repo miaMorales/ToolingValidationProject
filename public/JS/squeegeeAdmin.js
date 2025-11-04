@@ -16,7 +16,41 @@ document.addEventListener('DOMContentLoaded', () => {
     let originalStatus = "";
 
     // ==========================================================
-    //  NUEVO CÓDIGO: Limpieza de Modal al Cerrar
+    //  --- CAMBIO 1: AÑADIR LA FUNCIÓN DE AYUDA (HELPER) ---
+    // ==========================================================
+    /**
+     * Esta función usa authFetch para cargar una imagen protegida por token.
+     * @param {HTMLImageElement} imgElement El elemento <img> que queremos cargar.
+     */
+    async function loadProtectedImage(imgElement) {
+        const url = imgElement.dataset.src; // Tomamos la URL del atributo data-src
+        if (!url) return;
+
+        try {
+            // 1. Usamos authFetch, que SÍ envía el token
+            const response = await authFetch(url);
+            if (!response.ok) throw new Error('No se pudo cargar la imagen QR');
+
+            // 2. Convertimos la respuesta en un "Blob" (un archivo en memoria)
+            const imageBlob = await response.blob();
+
+            // 3. Creamos una URL local para ese Blob
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+
+            // 4. Asignamos esa URL local al 'src' de la imagen
+            imgElement.src = imageObjectURL;
+        } catch (error) {
+            console.error('Error al cargar imagen protegida:', url, error);
+            imgElement.alt = "Error al cargar QR"; // Mostramos un error en la imagen
+        }
+    }
+    // ==========================================================
+    //  FIN DEL CAMBIO 1
+    // ==========================================================
+
+
+    // ==========================================================
+    //  Limpieza de Modal al Cerrar (Esto está bien como estaba)
     // ==========================================================
     editModalEl.addEventListener("hidden.bs.modal", () => {
         const editForm = document.getElementById("editSqueegeeForm");
@@ -57,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     // ==========================================================
-    //  FIN DEL NUEVO CÓDIGO
+    //  FIN DE LIMPIEZA DE MODAL
     // ==========================================================
 
 
@@ -151,13 +185,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.classList.add('table-warning');
                 }
 
+                // ==========================================================
+                //  --- CAMBIO 2: USAR data-src Y 'lazy-qr' EN LA TABLA ---
+                // ==========================================================
                 tr.innerHTML = `
                     <td>${squeegee.sq_id}</td>
                     <td>${squeegee.sq_length}</td>
                     <td>${squeegee.sq_side}</td>
                     <td>${squeegee.sq_status}</td>
                     <td>${squeegee.sq_bc}</td>
-                    <td><img src="/api/squeegees/${squeegee.sq_id}/qr" alt="QR" class="table-qr" /></td>
+                    <td>
+                        <img alt="Cargando QR..." class="table-qr lazy-qr" 
+                             data-src="/api/squeegees/${squeegee.sq_id}/qr" />
+                    </td>
                     <td>${squeegee.sq_current_us}</td>
                     <td>${squeegee.sq_mx_us}</td>
                     <td>${formattedDate}</td>
@@ -167,8 +207,23 @@ document.addEventListener('DOMContentLoaded', () => {
                       </button>
                     </td>
                 `;
+                // ==========================================================
+                //  FIN DEL CAMBIO 2
+                // ==========================================================
+                
                 adminTableBody.appendChild(tr);
             });
+
+            // ==========================================================
+            //  --- CAMBIO 2.1: LLAMAR AL HELPER DESPUÉS DEL LOOP ---
+            // ==========================================================
+            document.querySelectorAll('.lazy-qr').forEach(img => {
+                loadProtectedImage(img);
+            });
+            // ==========================================================
+            //  FIN DEL CAMBIO 2.1
+            // ==========================================================
+
         } catch (error) {
             console.error("No se pudieron cargar los squeegees:", error);
             if (adminTableBody) adminTableBody.innerHTML = '<tr><td colspan="10">Error al cargar los datos.</td></tr>';
@@ -255,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Lógica de Filtros ---
+    // --- Lógica de Filtros (Sin cambios) ---
     document
         .querySelectorAll("#filter-row-admin .table-filter-admin")
         .forEach((input) => {
@@ -391,7 +446,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById("edit-sq-id").value = squeegee.sq_id;
             document.getElementById("edit-barcode").textContent = squeegee.sq_bc;
-            document.getElementById("edit-qr-code").src = `/api/squeegees/${squeegee.sq_id}/qr`;
+            
+            // ==========================================================
+            //  --- CAMBIO 3: USAR 'loadProtectedImage' EN EL MODAL ---
+            // ==========================================================
+            // document.getElementById("edit-qr-code").src = `/api/squeegees/${squeegee.sq_id}/qr`; // <-- LÍNEA ANTIGUA
+            
+            const qrImgElement = document.getElementById("edit-qr-code");
+            qrImgElement.src = ""; // Placeholder
+            qrImgElement.alt = "Cargando QR...";
+            qrImgElement.dataset.src = `/api/squeegees/${squeegee.sq_id}/qr`;
+            loadProtectedImage(qrImgElement);
+            // ==========================================================
+            //  FIN DEL CAMBIO 3
+            // ==========================================================
+
             document.getElementById("edit-current-cycles").value = squeegee.sq_current_us;
             document.getElementById("edit-max-cycles").value = squeegee.sq_mx_us;
 
@@ -402,12 +471,12 @@ document.addEventListener('DOMContentLoaded', () => {
             editModal.show();
         });
 
-    // 2. Lógica para guardar los cambios
+    // 2. Lógica para guardar los cambios (Sin cambios)
     document.getElementById("saveChangesBtn").addEventListener("click", async () => {
         const squeegeeId = document.getElementById("edit-sq-id").value;
         
         // ==========================================================
-        //  NUEVO CÓDIGO: VALIDACIÓN CON LONGITUD
+        //  VALIDACIÓN CON LONGITUD (Esto está bien como estaba)
         // ==========================================================
         let isValid = true;
 
@@ -467,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         // ==========================================================
-        //  FIN DEL NUEVO CÓDIGO
+        //  FIN DE LA VALIDACIÓN
         // ==========================================================
 
 
@@ -506,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Lógica de Pestañas
+    // 3. Lógica de Pestañas (Sin cambios)
     const tabs = document.querySelectorAll('#squeegee-tabs .nav-link');
     const contentPanels = document.querySelectorAll('.tab-content-panel');
 
