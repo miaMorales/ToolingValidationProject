@@ -52,7 +52,7 @@
                 <li class="nav-item"><a class="nav-link" href="stencil-hp.html">Stencil</a></li>
                 <li class="nav-item"><a class="nav-link active" href="plate-hp.html">Plate</a></li>
                 <li class="nav-item"><a class="nav-link" href="recipes.html">RECIPES</a></li>
-                <li class="nav-item"><a class="nav-link" href="users-hp.html">Users</a></li>
+                <li class="nav-item" id="gestion-us"><a class="nav-link" href="users-hp.html">Users</a></li>
                 <li class="nav-item"><a class="nav-link" href="imprimir.html">Imprimir</a></li>
             </ul>
             <div class="d-flex align-items-center">
@@ -332,8 +332,7 @@
                         <div class="row">
                             <div class="col-md-6 text-center">
                                 <h5>QR y Barcode</h5>
-                                <img alt="Cargando QR..." class="table-qr lazy-qr" 
-                             data-src="/api/plates/${plate.pl_id}/qr" />
+                                <img id="edit-qr-code" alt="Cargando QR..." class="table-qr lazy-qr" />
                                 <p id="edit-barcode" class="fw-bold"></p>
                             </div>
                             <div class="col-md-6">

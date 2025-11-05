@@ -40,7 +40,7 @@ async function createUser(userData) {
     const query = `
         INSERT INTO users (name, password, privilege, last_name1, last_name2, no_employee)
         VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING no_employee; -- <-- CAMBIO: Retornar la nueva PK
+        RETURNING no_employee,name; 
     `;
     const { rows } = await pool.query(query, [name, hashedPassword, privilege, last_name1, last_name2, no_employee]);
     return rows[0];

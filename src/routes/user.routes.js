@@ -7,13 +7,13 @@ const {
     updateUser,
     deleteUser
 } = require('../controllers/user.controller');
-const { verifyToken, soloAdmin } = require('../middleware/auth.middleware');
+const { verifyToken, adminYTecnico, } = require('../middleware/auth.middleware');
 
-router.get('/users', verifyToken,soloAdmin, getUsers);
-router.post('/users', verifyToken,soloAdmin, createUser);
+router.get('/users', verifyToken,adminYTecnico, getUsers);
+router.post('/users', verifyToken,adminYTecnico, createUser);
 
 // --- CAMBIO: El parámetro de ruta ahora es :no_employee ---
-router.put('/users/:no_employee',verifyToken, soloAdmin, updateUser);
-router.delete('/users/:no_employee', verifyToken,soloAdmin, deleteUser);
+router.put('/users/:no_employee',verifyToken, adminYTecnico, updateUser);
+router.delete('/users/:no_employee', verifyToken,adminYTecnico, deleteUser);
 
 module.exports = router;

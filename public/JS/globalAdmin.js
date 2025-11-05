@@ -6,9 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Botón de "Gestión de Usuarios"
     // Asumamos que el enlace en tu NAV tiene id="nav-users-link"
     const usersLink = document.getElementById('main-nav-links'); // <-- Debes poner este ID en tu HTML
-    
+    const gestionUs=document.getElementById('gestion-us');
+
     if (usersLink && privilege == '2') { // Si NO es Admin (0)
         usersLink.style.display = 'none'; // Ocultar el enlace
+    }
+
+    if(gestionUs && privilege == '1' || privilege == '2'){
+        gestionUs.style.display='none';
     }
 
     function handleLogout() {

@@ -39,7 +39,7 @@ async function updatePlate(req, res) {
   try {
     const { id } = req.params;
     const data = req.body;
-    await plateService.updatePlateAndLogHistory(id, data);
+    await plateService.updatePlateAndLogHistory(id, data, req.user);
     res.json({ success: true, message: 'Plate actualizado correctamente' });
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar el plate' });

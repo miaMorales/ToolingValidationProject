@@ -100,8 +100,9 @@ ORDER BY ph.pl_h_date ASC;
 }
 
 // --- Lógica de Edición y Log ---
+// --- Lógica de Edición y Log ---
 
-async function updatePlateAndLogHistory(id, newData) {
+async function updatePlateAndLogHistory(id, newData, user) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -117,31 +118,35 @@ async function updatePlateAndLogHistory(id, newData) {
     }
 
     // ====================================================================
-    //  CAMBIO EN LÓGICA DE HISTORIAL (Replicado de Stencil/Squeegee)
+    //  CAMBIO EN LÓGICA DE HISTORIAL (Lógica de Responsable Corregida)
     // ====================================================================
     let needsHistoryRecord = false;
-    let historyComment = ''; // Inicia vacío
+    let historyComment = ""; // Inicia vacío
 
-    // 1. Revisa si el usuario ENVIÓ un formulario de historial
-    if (newData.history && newData.history.comment) {
-        needsHistoryRecord = true;
-        historyComment = newData.history.comment; // Usa el comentario del usuario
-    }
-    
-    // 2. Revisa si hubo cambios automáticos (Status o Ciclos) y los anexa.
-    if (originalPlate.pl_status.trim() !== newData.status.trim()) {
+    // --- 1. Definir las variables de cambio PRIMERO ---
+    const statusChanged = originalPlate.pl_status.trim() !== newData.status.trim();
+    const cyclesChanged = originalPlate.pl_current_us !== parseInt(newData.currentCycles);
+    // Revisa si el usuario ENVIÓ un comentario manual
+    const manualCommentAdded = newData.history && newData.history.comment;
+
+    // --- 2. Construir el comentario y determinar si se necesita historial ---
+    if (manualCommentAdded) {
       needsHistoryRecord = true;
-      historyComment += (historyComment ? ' ' : '') + `(Cambio de status: ${originalPlate.pl_status.trim()} -> ${newData.status.trim()})`;
+      historyComment = newData.history.comment; // Usa el comentario del usuario
     }
 
-    if (originalPlate.pl_current_us !== parseInt(newData.currentCycles)) {
+    if (statusChanged) {
       needsHistoryRecord = true;
-      historyComment += (historyComment ? ' ' : '') + `(Ciclos actualizados: ${originalPlate.pl_current_us} -> ${newData.currentCycles})`;
+      historyComment += (historyComment ? " " : "") + `(Cambio de status: ${originalPlate.pl_status.trim()} -> ${newData.status.trim()})`;
+    }
+
+    if (cyclesChanged) {
+      needsHistoryRecord = true;
+      historyComment += (historyComment ? " " : "") + `(Ciclos actualizados: ${originalPlate.pl_current_us} -> ${newData.currentCycles})`;
     }
     // ====================================================================
     //  FIN DEL CAMBIO
     // ====================================================================
-
 
     const updateSql = `
       UPDATE plates 
@@ -161,7 +166,25 @@ async function updatePlateAndLogHistory(id, newData) {
         VALUES ($1, $2, $3, $4, $5)
       `;
 
-      const responsible = newData.history?.responsible || "SYS";
+      // ====================================================================
+      //  LÓGICA DE RESPONSABLE (La parte importante)
+      // ====================================================================
+      let responsible;
+
+      // REGLA 1: Si SÓLO cambiaron los ciclos (y no el status, y no hubo comentario manual)
+      if (cyclesChanged && !statusChanged && !manualCommentAdded) {
+        // ¡Ajusta 'user.no_empleado' a tu campo de token real!
+        responsible = user?.no_employee|| "SYS_CYC"; // Fallback si el user no está
+      } else {
+        // REGLA 2: Si cambió el status, O se agregó un comentario manual,
+        // O se cambiaron AMBAS cosas (ciclos y status),
+        // usa el valor del formulario (si existe).
+        responsible = newData.history?.responsible || "SYS_MAN";
+      }
+      // ====================================================================
+      //  FIN DE LÓGICA DE RESPONSABLE
+      // ====================================================================
+
       const date = newData.history?.date || new Date();
 
       await client.query(historySql, [
@@ -169,9 +192,11 @@ async function updatePlateAndLogHistory(id, newData) {
         date,
         newData.status,
         historyComment.trim(), // Usa el comentario actualizado
-        responsible,
+        responsible, // <-- Aquí se usa el 'responsible' CORRECTO
       ]);
     }
+    
+    // (AQUÍ ESTABA EL CÓDIGO INCORRECTO FLOTANTE, AHORA ELIMINADO)
 
     await client.query("COMMIT");
     return { success: true };

@@ -144,10 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn btn-sm btn-outline-primary edit-btn" data-user='${userDataForEdit.replace(/'/g, "&apos;")}' title="Editar">
                         <i class="bi bi-pencil-square"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger delete-btn" data-name="${safeName}" title="Eliminar">
+                    
+                    <button class="btn btn-sm btn-outline-danger delete-btn" 
+                            data-name="${safeName}" 
+                            data-no-employee="${safeNoEmployee}" 
+                            title="Eliminar">
                         <i class="bi bi-trash-fill"></i>
                     </button>
-                </td>
+                    </td>
             `;
             userTableBody.appendChild(tr);
         });
@@ -282,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (deleteBtn) {
-            const no_employee = deleteBtn.dataset.no_employee;
+            const no_employee = deleteBtn.dataset.noEmployee;;
             const name = deleteBtn.dataset.name; // Solo para el mensaje
             if (confirm(`¿Estás seguro de que quieres eliminar a '${name}' (No. ${no_employee})?`)) {
                 try {

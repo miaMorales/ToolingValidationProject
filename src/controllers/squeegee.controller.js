@@ -60,7 +60,7 @@ async function updateSqueegee(req, res) {
   try {
     const { id } = req.params;
     const data = req.body;
-    await squeegeeService.updateSqueegeeAndLogHistory(id, data);
+    await squeegeeService.updateSqueegeeAndLogHistory(id, data, req.user);
     res.json({ success: true, message: 'Squeegee actualizado correctamente' });
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar el squeegee' });
