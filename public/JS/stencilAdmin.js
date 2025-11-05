@@ -347,17 +347,25 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function toggleHistorySection() {
-    const newStatusIsNgOrMant =
+    // 1. Revisa si el NUEVO status seleccionado requiere historial
+    const newStatusRequiresHistory =
       document.getElementById("edit-status-ng").checked ||
-      document.getElementById("edit-status-mant").checked;
+      document.getElementById("edit-status-mant").checked ||
+      document.getElementById("edit-status-baj").checked; // <-- AÑADIDO ESTO
 
-    const shouldShowHistory =
-      newStatusIsNgOrMant ||
+    // 2. Revisa si el status ORIGINAL (cuando se abrió el modal) requería historial
+    const originalStatusRequiredHistory =
       originalStatus === "NG" ||
-      originalStatus === "MANT.";
+      originalStatus === "MANT." ||
+      originalStatus === "BAJA"; // <-- AÑADIDO ESTO
+
+    // 3. Se debe mostrar si CUALQUIERA de los dos es verdadero
+    const shouldShowHistory =
+      newStatusRequiresHistory || originalStatusRequiredHistory;
 
     historySection.style.display = shouldShowHistory ? "block" : "none";
 
+    // El resto de la función es igual...
     if (shouldShowHistory) {
       document.getElementById("edit-history-date-stencil").valueAsDate =
         new Date();
