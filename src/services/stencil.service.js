@@ -184,7 +184,7 @@ s.st_status = '-'
 }
 
 async function getAllSuppliers() {
-  const sql = "BAJA";
+  const sql = "SELECT supp_name FROM suppliers ORDER BY supp_name";;
   const { rows } = await pool.query(sql);
 
   return rows.map((row) => row.supp_name);
