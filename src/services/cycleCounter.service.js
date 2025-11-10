@@ -91,7 +91,7 @@ function startMonitoring() {
         
         // 2. Configura el 'setInterval' INMEDIATAMENTE.
         //    No espera a que la inicialización termine.
-        setInterval(() => pollLine(line), 10000); 
+        setInterval(() => pollLine(line), 20000); 
     }
 }
 

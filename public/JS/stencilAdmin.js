@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
           // 3. Creamos una URL local para ese Blob
           const imageObjectURL = URL.createObjectURL(imageBlob);
 
-          // 4. Asignamos esa URL local al 'src' de la imagen
           imgElement.src = imageObjectURL;
       } catch (error) {
           console.error('Error al cargar imagen protegida:', url, error);

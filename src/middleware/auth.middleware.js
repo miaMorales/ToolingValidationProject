@@ -19,11 +19,8 @@ function verifyToken(req, res, next) {
     // 2. Verificar el token
     try {
         const payload = jwt.verify(token, JWT_SECRET);
-
-        // 3. Si es válido, guardar los datos del usuario en el objeto 'req'
-        // para que las siguientes funciones (controladores) puedan usarlo.
-        req.user = payload; // req.user ahora tiene { name, no_employee, privilege }
-        next(); // Pasa al siguiente middleware o al controlador
+        req.user = payload; 
+        next(); 
     } catch (err) {
         console.warn("[AUTH] Token inválido o expirado:", err.message);
         return res.status(403).json({ message: 'Token inválido o expirado.' }); // 403 Forbidden
@@ -45,7 +42,6 @@ function checkRole(allowedPrivileges) {
         // Convertimos el privilegio del token (que puede ser "0") a un NÚMERO
         const userPrivilege = parseInt(req.user.privilege, 10);
         // --- FIN DEL CAMBIO ---
-        console.log(`[AUTH GUARD] Verificando token. 'privilege' leído del token: ${userPrivilege} (Tipo: ${typeof userPrivilege})`);
         if (allowedPrivileges.includes(userPrivilege)) {
             // El usuario tiene el privilegio, continuar
             // ej. [0].includes(0) -> true
