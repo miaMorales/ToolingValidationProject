@@ -90,27 +90,78 @@ async function logProduction(logData) {
     const modelNameQuery = 'SELECT model_name FROM models WHERE pn_pcb = $1 LIMIT 1';
     const modelNameResult = await pool.query(modelNameQuery, [pn_pcb]);
     const model_name = modelNameResult.rows[0]?.model_name || 'N/A';
-
+    const client = await pool.connect();
     // 2. Modificamos la consulta para usar el dato nuevo
     const query = `
         INSERT INTO production_log 
         (line_number, pn_pcb, model_name, model_side, stencil_bc, squeegee_f_bc, squeegee_r_bc, squeegee_y_bc, plate_bc, pasta_lot, username)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     `;
-    const params = [
-        line,
-        pn_pcb,
-        model_name,
-        model_side,
-        barcodes.stencil,
-        barcodes.squeegee_f || null,
-        barcodes.squeegee_r || null,
-        barcodes.squeegee_y || null,
-        barcodes.plate,
-        barcodes.pasta,
-        userEmployee // <-- 3. Usamos el número de empleado seguro
-    ];
-    await pool.query(query, params);
+    try {
+        // Iniciar transacción
+        await client.query('BEGIN');
+
+        // 1. Insertar en el log de producción (tu código original)
+        const logQuery = `
+            INSERT INTO production_log 
+            (line_number, pn_pcb, model_name, model_side, stencil_bc, squeegee_f_bc, squeegee_r_bc, squeegee_y_bc, plate_bc, pasta_lot, username)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `;
+        const logParams = [
+            line,
+            pn_pcb,
+            model_name,
+            model_side,
+            barcodes.stencil,
+            barcodes.squeegee_f || null,
+            barcodes.squeegee_r || null,
+            barcodes.squeegee_y || null,
+            barcodes.plate,
+            barcodes.pasta,
+            userEmployee
+        ];
+        await client.query(logQuery, logParams);
+
+        // 2. Actualizar la tabla 'active_tooling'
+        // Esto "intercambia" el herramental activo por el nuevo que acabas de validar
+        const activeToolingQuery = `
+            INSERT INTO active_tooling 
+            (line_number, stencil_bc, squeegee_f_bc, squeegee_r_bc, squeegee_y_bc, plate_bc, last_updated)
+            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+            ON CONFLICT (line_number) DO UPDATE SET
+                stencil_bc = EXCLUDED.stencil_bc,
+                squeegee_f_bc = EXCLUDED.squeegee_f_bc,
+                squeegee_r_bc = EXCLUDED.squeegee_r_bc,
+                squeegee_y_bc = EXCLUDED.squeegee_y_bc,
+                plate_bc = EXCLUDED.plate_bc,
+                last_updated = CURRENT_TIMESTAMP;
+        `;
+        const activeToolingParams = [
+            line,
+            barcodes.stencil,
+            barcodes.squeegee_f || null,
+            barcodes.squeegee_r || null,
+            barcodes.squeegee_y || null,
+            barcodes.plate
+        ];
+        await client.query(activeToolingQuery, activeToolingParams);
+
+        // Confirmar transacción
+        await client.query('COMMIT');
+
+    } catch (e) {
+        // Si algo falla, deshacer todo
+        await client.query('ROLLBACK');
+        throw e; // Re-lanza el error para que el controller lo atrape
+    } finally {
+        // Liberar el cliente de vuelta a la pool
+        client.release();
+    }
+    // --- (FIN) CÓDIGO AÑADIDO ---
+
+    // (La lógica original de 'pool.query' se movió adentro de la transacción)
+    // Ya no necesitamos 'return { success: true }' aquí si el 'catch' maneja los errores.
+    // O déjalo si tu controller lo espera
     return { success: true };
 }
 

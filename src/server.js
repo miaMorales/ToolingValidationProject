@@ -20,6 +20,7 @@ const recipeRoutes = require('./routes/recipe.routes');
 const plateRoutes = require('./routes/plate.routes.js');
 const squeegeeRoutes = require('./routes/squeegee.routes.js');
 const validationRoutes = require('./routes/validation.routes');
+const { startMonitoring } = require('./services/cycleCounter.service');
 const authRoutes = require('./routes/auth.routes'); // Rutas de autenticación (login)
 const userRoutes = require('./routes/user.routes');   // Rutas de gestión de usuarios (CRUD)
 const labelRoutes = require('./routes/label.routes');
@@ -64,3 +65,4 @@ app.get('/operadorIndex.html', (req, res) => {
 // --- Puerto y Arranque ---
 const PORT = process.env.PORT || 3000; // Usa variable de entorno si existe, si no, 3000
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+startMonitoring();

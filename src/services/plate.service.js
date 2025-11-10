@@ -291,11 +291,12 @@ async function getAllSuppliers() {
 }
 
 async function getPcbsByWorkline(wl_no) {
-  // Asume que work_line tiene pn_pcb en model_name (como en tu ejemplo)
-  const sql =
-    "SELECT DISTINCT model_name FROM work_line WHERE wl_no = $1 ORDER BY model_name";
-  const { rows } = await pool.query(sql, [wl_no]);
-  return rows.map((row) => row.model_name);
+
+    const sql = "SELECT DISTINCT model_name FROM work_line WHERE wl_no = $1 ORDER BY model_name";
+ 
+  const { rows } = await pool.query(sql, [wl_no]); 
+
+  return rows.map((row) => row.model_name); 
 }
 
 async function getAllSeriesAndNextVersion(pn_pcb, model_side) {

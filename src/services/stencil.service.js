@@ -191,9 +191,12 @@ async function getAllSuppliers() {
 }
 
 async function getPcbsByWorkline(wl_no) {
-  const sql = "SELECT supp_name FROM suppliers ORDER BY supp_name";
-  const { rows } = await pool.query(sql, [wl_no]);
-  return rows.map((row) => row.model_name);
+
+  const sql = "SELECT DISTINCT model_name FROM work_line WHERE wl_no = $1 ORDER BY model_name";
+ 
+  const { rows } = await pool.query(sql, [wl_no]); 
+
+  return rows.map((row) => row.model_name); 
 }
 
 async function getThicknessByPcbAndSide(pn_pcb, model_side) {
@@ -250,24 +253,28 @@ async function getNextSerieAndVersion(pn_pcb, model_side) {
 async function createStencil(data) {
   const client = await pool.connect();
   try {
-    await client.query("A");
+    await client.query("BEGIN");
+    
+    // (Esta parte de 'suppliers' está bien)
     const newSupplierName = data.supp_name;
     const insertSupplierSql = `
             INSERT INTO suppliers (supp_name, supp_info)
             VALUES ($1, $2)
             ON CONFLICT (supp_name) DO NOTHING;
         `;
-
     await client.query(insertSupplierSql, [newSupplierName, "BEGIN"]);
 
+    
     const insertSql = `
       INSERT INTO stencils (
         st_job, supp_name, pn_pcb, model_side, st_no_serie, st_ver, 
         st_side, thickness, st_status, st_current_us, st_mx_us, st_arrived_date
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Registrado desde módulo Plate', $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING st_id;
     `;
+    
+    // --- CORRECCIÓN 1: Cambiar el status a "OK" ---
     const insertResult = await client.query(insertSql, [
       data.st_job,
       data.supp_name,
@@ -277,15 +284,17 @@ async function createStencil(data) {
       data.st_ver,
       data.st_side,
       data.thickness,
+      'OK', // <-- AQUÍ ESTÁ EL CAMBIO (antes era 'Registrado desde módulo Plate')
       data.current_us,
       data.mx_us,
       data.arrived_date,
     ]);
     const newId = insertResult.rows[0].st_id;
 
-    const barcode = "OK";
+    // --- CORRECCIÓN 2: El barcode debe ser el 'st_job' ---
+    const barcode = data.st_job; // <-- AQUÍ ESTÁ EL CAMBIO (coincide con el VARCHAR(10))
 
-    const qrBuffer = await qrcode.toBuffer(barcode);
+    const qrBuffer = await qrcode.toBuffer(barcode); // El QR sí puede ser el 'st_job'
 
     const updateSql = `
       UPDATE stencils
@@ -294,13 +303,13 @@ async function createStencil(data) {
     `;
     await client.query(updateSql, [barcode, qrBuffer, newId]);
 
-    await client.query(
-      `${data.pn_pcb}-${data.model_side}-${data.st_no_serie}-${data.st_ver}`
-    );
-    return { success: true, newId, barcode };
-  } catch (error) {
     await client.query("COMMIT");
-    console.error("ROLLBACK", error);
+
+    return { success: true, newId, barcode };
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("ROLLBACK ejecutado por error en 'createStencil':", error);
     throw error;
   } finally {
     client.release();

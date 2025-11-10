@@ -153,7 +153,7 @@ function populateStencilsTable(stencils) {
 
         const row = `
             <tr>
-                <td>${index + 1}</td>
+                <td>${item.st_id}</td>
                 <td>${item.st_bc || 'N/A'}</td>
                 <td>${item.st_no_serie || 'N/A'}</td>
                 <td>${item.st_ver || 'N/A'}</td>
@@ -185,7 +185,7 @@ function populateSqueegeesTable(squeegees) {
 
         const row = `
             <tr>
-                <td>${index + 1}</td>
+                <td>${item.sq_id}</td>
                 <td>${item.sq_bc || 'N/A'}</td>
                 <td>${item.sq_length || 'N/A'}</td>
                 <td>${item.sq_status || 'N/A'}</td>
@@ -215,7 +215,7 @@ function populatePlatesTable(plates) {
 
         const row = `
             <tr>
-                <td>${index + 1}</td>
+                <td>${item.pl_id}</td>
                 <td>${item.pl_bc || 'N/A'}</td>
                 <td>${item.pl_no_serie || 'N/A'}</td>
                 <td>${item.pl_status || 'N/A'}</td>
