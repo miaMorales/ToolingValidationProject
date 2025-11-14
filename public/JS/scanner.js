@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Selectores para los nuevos elementos
     const mainTabs = document.querySelectorAll('#main-tabs .nav-link');
     const contentPanels = document.querySelectorAll('.tab-content-panel');
-
+    
     const lineSelectionView = document.getElementById('line-selection-view');
     const scanView = document.getElementById('scan-view');
     const lineCarousel = document.getElementById('line-carousel');
@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const scanProgress = document.getElementById('scan-progress');
     const resetButton = document.getElementById('reset-button');
     const logTableBody = document.getElementById('log-table-body');
+    // Nuevos selectores para alertas
+    const alertsTableBody = document.getElementById('alerts-table-body');
+    const alertsBadge = document.getElementById('alerts-badge'); // Para notificaciones
     let state = {};
 
      mainTabs.forEach(tab => {
@@ -27,11 +30,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (targetId === '#history-content') {
                 loadProductionLogs();
-            } else if (targetId === '#scan-content') {
-                resetState(); // Reinicia el proceso de escaneo al volver a la pestaña
+            } else if (targetId === '#alerts-content') { // <-- (INICIO) AÑADIR ESTE ELSE IF
+                loadMaintenanceAlerts();
+            } // <-- (FIN) AÑADIR ESTE ELSE IF
+            else if (targetId === '#scan-content') {
+                resetState();
             }
         });
     });
+async function loadMaintenanceAlerts() {
+    try {
+        const response = await authFetch('/api/validation/alerts');
+        if (!response.ok) throw new Error('Error al cargar las alertas.');
+        
+        // 'alerts' ahora contiene TODAS (nuevas y resueltas)
+        const alerts = await response.json(); 
+        
+        alertsTableBody.innerHTML = ''; // Limpiar la tabla
+
+        // --- LÓGICA DEL BADGE (CÍRCULO ROJO) ---
+        // Filtramos solo las 'new' para contarlas
+        const newAlerts = alerts.filter(alert => alert.status === 'new');
+
+        if (newAlerts.length > 0) {
+            // El badge solo muestra el conteo de las nuevas
+            if (alertsBadge) {
+                alertsBadge.textContent = newAlerts.length;
+                alertsBadge.style.display = 'inline-block';
+            }
+        } else {
+            // Si no hay nuevas, se oculta el badge
+            if (alertsBadge) alertsBadge.style.display = 'none';
+        }
+
+        // --- LÓGICA DE LA TABLA ---
+        if (alerts.length > 0) {
+            // Recorremos TODAS las alertas
+            alerts.forEach(alert => {
+                const tr = document.createElement('tr');
+                const timestamp = new Date(alert.alert_timestamp).toLocaleString('es-MX');
+
+                // --- ¡AQUÍ ESTÁ LA MAGIA! ---
+                // Si la alerta es 'new', pintamos la fila de rojo
+                if (alert.status === 'new') {
+                    tr.classList.add('table-danger'); // Bootstrap clase para fila roja
+                }
+
+                tr.innerHTML = `
+                    <td>${timestamp}</td>
+                    <td>${alert.line_number}</td>
+                    <td>${alert.tool_type}</td>
+                    <td>${alert.tool_barcode}</td>
+                    <td class="fw-bold">${alert.current_uses_recorded} / ${alert.max_uses_recorded}</td>
+                `;
+                alertsTableBody.appendChild(tr);
+            });
+
+        } else {
+            // Si no hay NINGUNA alerta (ni nueva ni resuelta), mostramos el mensaje
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="5" class="text-center text-muted">No hay historial de alertas.</td>`;
+            alertsTableBody.appendChild(tr);
+        }
+    } catch (error) {
+        console.error(error);
+        alertsTableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${error.message}</td></tr>`;
+    }
+}
     async function loadProductionLogs() {
         try {
             const response = await authFetch('/api/validation/logs');
@@ -200,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollRightBtn.addEventListener('click', () => {
         lineCarousel.scrollBy({ left: 300, behavior: 'smooth' });
     });
+    loadMaintenanceAlerts();
     // Iniciar
     resetState();
 });

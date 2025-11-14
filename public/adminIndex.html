@@ -1,49 +1,64 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🏡 Inicio</title>
     <script>
-        (function() {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.warn("GUARDIA (Inmediato): No hay token. Redirigiendo...");
-            // Si no hay token, patea al usuario al login
-            window.location.replace('/index.html'); 
-        }
-    })();
-
-    // 2. Verificación para el BFCache (cuando usa el botón "Atrás")
-    window.addEventListener('pageshow', function(event) {
-        // event.persisted es true si la página vino del cache
-        if (event.persisted) {
-            console.log("GUARDIA (PageShow): Página cargada desde BFCache. Verificando...");
-            const token = localStorage.getItem('token');
+        (function () {
+            const token = localStorage.getItem("token");
             if (!token) {
-                // Si volvió sin token, lo pateamos de nuevo
-                window.location.replace('/index.html');
+                console.warn("GUARDIA (Inmediato): No hay token. Redirigiendo...");
+                // Si no hay token, patea al usuario al login
+                window.location.replace("/index.html");
             }
-        }
-    });
+        })();
+
+        // 2. Verificación para el BFCache (cuando usa el botón "Atrás")
+        window.addEventListener("pageshow", function (event) {
+            // event.persisted es true si la página vino del cache
+            if (event.persisted) {
+                console.log(
+                    "GUARDIA (PageShow): Página cargada desde BFCache. Verificando..."
+                );
+                const token = localStorage.getItem("token");
+                if (!token) {
+                    // Si volvió sin token, lo pateamos de nuevo
+                    window.location.replace("/index.html");
+                }
+            }
+        });
     </script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/CSS/styles.css" />
     <script src="/JS/tecnicoAdmin.js"></script>
 </head>
-<body class="body-line">
 
+<body class="body-line">
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="main-nav-links">
-                <li class="nav-item"><a class="nav-link" href="squeegee-hp.html">Squeegee</a></li>
-                <li class="nav-item"><a class="nav-link" href="stencil-hp.html">Stencil</a></li>
-                <li class="nav-item"><a class="nav-link" href="plate-hp.html">Plate</a></li>
-                <li class="nav-item"><a class="nav-link" href="recipes.html">RECIPES</a></li>
-                <li class="nav-item" id="get-users"><a class="nav-link" href="users-hp.html">Users</a></li>
-                <li class="nav-item"><a class="nav-link" href="imprimir.html">Imprimir</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="squeegee-hp.html">Squeegee</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="stencil-hp.html">Stencil</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="plate-hp.html">Plate</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="recipes.html">RECIPES</a>
+                </li>
+                <li class="nav-item" id="get-users">
+                    <a class="nav-link" href="users-hp.html">Users</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="imprimir.html">Imprimir</a>
+                </li>
             </ul>
             <div class="d-flex align-items-center">
                 <a href="adminIndex.html" class="btn nav-icon-btn"><i class="bi bi-house-door-fill"></i></a>
@@ -62,25 +77,43 @@
             <li class="nav-item">
                 <a class="nav-link" href="#" data-target="#history-content">Historial de Producción</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-target="#alerts-content">
+                    Alertas de Mantenimiento
+                    <span class="badge bg-danger ms-1" id="alerts-badge" style="display: none">0</span>
+                </a>
+            </li>
         </ul>
 
-        <div id="scan-content" class="tab-content-panel" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50vh;">
+        <div id="scan-content" class="tab-content-panel" style="
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          min-height: 50vh;
+        ">
             <div class="scan-view-container">
                 <div id="line-selection-view">
-                    <div class="line-selection-prompt">Seleccione la linea de trabajo</div>
+                    <div class="line-selection-prompt">
+                        Seleccione la linea de trabajo
+                    </div>
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-light mx-2" id="scroll-left-btn"><i class="bi bi-chevron-left"></i></button>
+                        <button class="btn btn-light mx-2" id="scroll-left-btn">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
                         <div class="line-carousel" id="line-carousel">
                             <div class="line-card" data-line="1">LINEA #1</div>
                             <div class="line-card" data-line="2">LINEA #2</div>
                             <div class="line-card" data-line="3">LINEA #3</div>
                             <div class="line-card" data-line="4">LINEA #4</div>
                         </div>
-                        <button class="btn btn-light mx-2" id="scroll-right-btn"><i class="bi bi-chevron-right"></i></button>
+                        <button class="btn btn-light mx-2" id="scroll-right-btn">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div id="scan-view" style="display: none;">
+                <div id="scan-view" style="display: none">
                     <div class="scan-prompt-area">
                         <h1 id="scan-prompt"></h1>
                         <i class="bi bi-upc-scan barcode-icon"></i>
@@ -88,14 +121,16 @@
                     <div class="scan-context-area" id="scan-context"></div>
                     <ul class="list-group list-group-flush" id="scan-progress"></ul>
                     <div class="mt-4">
-                        <button class="reset-button-custom" id="reset-button">Reiniciar Proceso</button>
+                        <button class="reset-button-custom" id="reset-button">
+                            Reiniciar Proceso
+                        </button>
                     </div>
                 </div>
             </div>
-            <input type="text" id="scanner-input" autocomplete="off">
+            <input type="text" id="scanner-input" autocomplete="off" />
         </div>
 
-        <div id="history-content" class="tab-content-panel" style="display: none;">
+        <div id="history-content" class="tab-content-panel" style="display: none">
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
@@ -114,11 +149,28 @@
                             <th>Usuario</th>
                         </tr>
                     </thead>
-                    <tbody id="log-table-body">
-                        </tbody>
+                    <tbody id="log-table-body"></tbody>
                 </table>
             </div>
         </div>
+        <div id="alerts-content" class="tab-content-panel" style="display: none;">
+    <h2 class="mb-3">Alertas de Mantenimiento Pendientes</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-sm">
+            <thead class="table table-striped table-hover">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Línea</th>
+                    <th>Herramental</th>
+                    <th>Barcode</th>
+                    <th>Usos (Actual/Max)</th>
+                </tr>
+            </thead>
+            <tbody id="alerts-table-body">
+                </tbody>
+        </table>
+    </div>
+</div>
     </main>
 
     <footer class="footer-bar"></footer>
@@ -129,4 +181,5 @@
     <script src="/JS/scanner.js"></script>
     <script src="/JS/globalAdmin.js"></script>
 </body>
+
 </html>

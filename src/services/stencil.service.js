@@ -159,7 +159,7 @@ async function getBajaStencils() {
     s.supp_name,
     m.model_name,
     s.pn_pcb,
-    CONCAT(s.st_no_serie, 'Error en la transacción de actualización', s.st_ver) AS serie,
+    CONCAT(s.st_no_serie, '-', s.st_ver) AS serie,
     s.st_side,
     s.thickness,
     s.st_status,
@@ -177,7 +177,7 @@ INNER JOIN
 INNER JOIN
     stencil_history AS sh ON s.st_id = sh.stencil_id
 WHERE
-s.st_status = '-'
+s.st_status = 'BAJA'
 `;
   const { rows } = await pool.query(sql);
   return rows;

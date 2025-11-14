@@ -19,11 +19,11 @@ const stencilRoutes = require('./routes/stencil.routes.js');
 const recipeRoutes = require('./routes/recipe.routes');
 const plateRoutes = require('./routes/plate.routes.js');
 const squeegeeRoutes = require('./routes/squeegee.routes.js');
+const { startMonitoring } = require('./services/cycleCounter.service.js');
 const validationRoutes = require('./routes/validation.routes');
-const { startMonitoring } = require('./services/cycleCounter.service');
-const authRoutes = require('./routes/auth.routes'); // Rutas de autenticación (login)
 const userRoutes = require('./routes/user.routes');   // Rutas de gestión de usuarios (CRUD)
 const labelRoutes = require('./routes/label.routes');
+const authRoutes = require('./routes/auth.routes');
 // --- Middlewares ---
 // Parsear JSON bodies (IMPORTANTE: antes de las rutas)
 app.use(express.json());

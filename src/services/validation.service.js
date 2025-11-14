@@ -174,4 +174,17 @@ async function getProductionLogs() {
     return rows;
 }
 
-module.exports = { validateScan, logProduction, getProductionLogs };
+async function getMaintenanceAlerts() {
+    const query = `
+        SELECT * FROM maintenance_alerts
+        ORDER BY
+            -- 1. Pone las 'new' primero
+            CASE WHEN status = 'new' THEN 1 ELSE 2 END,
+            -- 2. Luego ordena por la más reciente
+            alert_timestamp DESC;
+    `;
+    const { rows } = await pool.query(query);
+    return rows;
+}
+
+module.exports = { validateScan, logProduction, getProductionLogs, getMaintenanceAlerts };

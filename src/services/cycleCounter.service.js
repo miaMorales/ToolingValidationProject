@@ -1,215 +1,223 @@
-const SMB2 = require('smb2');
+const { exec } = require('child_process');
+const util = require('util');
 const pool = require('../db/pool');
+const execPromise = util.promisify(exec);
 
-// --- CONFIGURACIÓN CORRECTA (SOLO DATOS, SIN CLIENT) ---
+// CONFIGURACIÓN DE LÍNEAS
 const lineConfig = {
     '1': {
-        share: '\\\\10.229.21.114\\RemoteBS',
+        path: '\\\\10.229.21.114\\RemoteBS',
         username: 'Administrator',
         password: 'Password23',
-        domain: '.',
-        path: '', // Directorio raíz
-        lastCount: 0, 
-        isChecking: false 
+        lastFileName: null, 
+        pendingSqueegee: 0, 
+        isChecking: false
     },
     '2': {
-        share: '\\\\10.229.21.149\\RemoteBS',
+        path: '\\\\10.229.21.149\\RemoteBS',
         username: 'Administrator',
         password: 'Linea2',
-        domain: '.',
-        path: '',
-        lastCount: 0,
+        lastFileName: null,
+        pendingSqueegee: 0,
         isChecking: false
     },
     '3': {
-         share: '\\\\10.229.21.148\\RemoteBS',
-         username: 'Administrator',
-         password: 'Linea3',
-         domain: '.',
-         path: '',
-        lastCount: 0,
+        path: '\\\\10.229.21.148\\RemoteBS',
+        username: 'Administrator',
+        password: 'Linea3',
+        lastFileName: null,
+        pendingSqueegee: 0,
         isChecking: false
     },
     '4': {
-         share: '\\\\10.229.21.147\\RemoteBS',
-         username: 'Administrator',
-         password: 'Linea4',
-         domain: '.',
-         path: '',
-        lastCount: 0,
+        path: '\\\\10.229.21.147\\RemoteBS',
+        username: 'Administrator',
+        password: 'Linea4',
+        lastFileName: null,
+        pendingSqueegee: 0,
         isChecking: false
     }
 };
-// --- FIN DE LA CONFIGURACIÓN ---
 
+// --- CONEXIÓN NATIVA WINDOWS ---
+async function connectToShare(line) {
+    const config = lineConfig[line];
+    const deleteCmd = `net use "${config.path}" /delete /y`;
+    const connectCmd = `net use "${config.path}" "${config.password}" /user:"${config.username}"`;
 
-// --- (INICIO) FUNCIÓN DE AYUDA (CONECTA/DESCONECTA) ---
-async function getRemoteFileCount(config) {
     try {
-        // 1. Crear cliente
-        const client = new SMB2({
-            share: config.share, 
-            username: config.username,
-            password: config.password,
-            domain: config.domain
-        });
-
-        // 2. "Promisify" la llamada a readdir
-        const files = await new Promise((resolve, reject) => {
-            client.readdir(config.path, (err, files) => {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(files);
-            });
-        });
-
-        // 3. Contar los archivos y devolver el número
-        const rbsFiles = files.filter(file => file.endsWith('.rbs'));
-        return rbsFiles.length;
-
+        await execPromise(deleteCmd).catch(() => {}); 
+        await execPromise(connectCmd);
+        console.log(`✅ [Línea ${line}] Conexión establecida.`);
     } catch (error) {
-        throw error; // El error se lanzará y será capturado por pollLine/initializeLineCount
+        if (!error.message.includes('1219')) {
+            console.error(`⚠️ [Línea ${line}] Error conectando: ${error.message}`);
+        }
     }
 }
-// --- (FIN) NUEVA FUNCIÓN DE AYUDA ---
 
+// --- OBTENER ARCHIVO POR FECHA (DIR /O-D) ---
+async function getLatestFileByDate(line) {
+    const config = lineConfig[line];
+    const cmd = `dir "${config.path}\\*.rbs" /B /A-D /O-D`;
 
-/**
- * Función principal para iniciar el monitoreo.
- */
+    try {
+        const { stdout } = await execPromise(cmd);
+        const files = stdout.split(/\r\n|\n|\r/).filter(f => f.trim() !== '');
+        if (files.length === 0) return null;
+        return files[0].trim(); 
+    } catch (error) {
+        console.error(`⚠️ [Línea ${line}] Error leyendo carpeta. Reintentando conexión...`);
+        await connectToShare(line);
+        return null;
+    }
+}
+
+// --- INICIO DEL SERVICIO ---
 function startMonitoring() {
-    console.log('Iniciando servicio de conteo de ciclos (Modo: Asíncrono)...');
+    console.log('=== SISTEMA DE CONTEO Y ALERTAS DB (40K) INICIADO ===');
+    const lines = Object.keys(lineConfig);
+    const interval = 15000; 
+    const stagger = 3000;   
 
-    for (const line in lineConfig) {
-        
-        // 1. Llama a la inicialización, PERO NO LA ESPERES (fire-and-forget)
-        //    Usamos .catch() para que un fallo aquí no "crashee" el servidor.
-        initializeLineCount(line).catch(err => {
-            console.error(`Fallo crítico en la inicialización de Línea ${line}: ${err.message}`);
-        });
-        
-        // 2. Configura el 'setInterval' INMEDIATAMENTE.
-        //    No espera a que la inicialización termine.
-        setInterval(() => pollLine(line), 20000); 
+    lines.forEach((line, index) => {
+        setTimeout(async () => {
+            await connectToShare(line);
+            initializeLine(line);
+        }, index * 2000);
+
+        setTimeout(() => {
+            setInterval(() => pollLine(line), interval);
+        }, index * stagger);
+    });
+}
+
+async function initializeLine(line) {
+    const latestFile = await getLatestFileByDate(line);
+    if (latestFile) {
+        lineConfig[line].lastFileName = latestFile;
+        console.log(`✅ [INIT] Línea ${line}: Listo. Archivo base: ${latestFile}`);
+    } else {
+        console.log(`⚠️ [INIT] Línea ${line}: Esperando archivos...`);
     }
 }
 
-/**
- * Obtiene el conteo inicial (Usa el ayudante)
- */
-async function initializeLineCount(line) {
-    try {
-        const config = lineConfig[line]; // <-- 'config' ahora es { share: '...', ... }
-        const currentCount = await getRemoteFileCount(config); // <-- Y se pasa al ayudante
-        
-        config.lastCount = currentCount;
-        console.log(`Línea ${line}: Conteo inicial de archivos .rbs establecido en ${currentCount}`);
-        
-    } catch (error) {
-        console.error(`Error inicializando Línea ${line}: ${error.message}`);
-    }
-}
-
-/**
- * Vigila una línea específica (Usa el ayudante)
- */
 async function pollLine(line) {
     const config = lineConfig[line];
-    if (config.isChecking) {
-        return;
-    }
+    if (config.isChecking) return;
     config.isChecking = true;
 
     try {
-        const newCount = await getRemoteFileCount(config); // <-- Usa el ayudante
+        const latestFile = await getLatestFileByDate(line);
 
-        if (newCount > config.lastCount) { 
-            const piecesMade = newCount - config.lastCount;
-            console.log(`Línea ${line}: Se detectaron ${piecesMade} archivos .rbs nuevos (Total: ${newCount})`);
-            
-            await decrementActiveTools(line, piecesMade);
-            
-            config.lastCount = newCount;
+        if (!latestFile) {
+            config.isChecking = false;
+            return;
+        }
+        if (!config.lastFileName) {
+            config.lastFileName = latestFile;
+            config.isChecking = false;
+            return;
         }
 
-    } catch (error) {
-        console.error(`Error al vigilar Línea ${line}: ${error.message}`);
-    }
+        if (latestFile !== config.lastFileName) {
+            console.log(`🚀 [Línea ${line}] NUEVA PIEZA DETECTADA (${latestFile})`);
+            await decrementActiveTools(line, 1);
+            config.lastFileName = latestFile;
+        } 
 
+    } catch (error) {
+        console.error(`⚠️ [ERROR CICLO] Línea ${line}: ${error.message}`);
+    }
     config.isChecking = false;
 }
 
-
-/**
- * Actualiza la base de datos (Esta función no cambia)
- */
-async function decrementActiveTools(line, piecesToIncrement) {
+// --- LÓGICA DE DB + ALERTA 40K ---
+async function decrementActiveTools(line, piecesDetected) {
     const client = await pool.connect();
+    const config = lineConfig[line];
+    const standardDecrement = piecesDetected;
+    let squeegeeDecrement = 0;
 
-    async function processTool(toolType, barcode, pieces) {
-        if (!barcode) return; 
+    // Cálculo de Squeegee (2:1 en L1/L2, 1:1 en L3/L4)
+    if (line === '3' || line === '4') {
+        squeegeeDecrement = piecesDetected;
+    } else {
+        config.pendingSqueegee += piecesDetected;
+        squeegeeDecrement = Math.floor(config.pendingSqueegee / 2);
+        config.pendingSqueegee = config.pendingSqueegee % 2;
+    }
+
+    async function processTool(toolType, barcode, piecesToSubtract) {
+        if (!barcode || piecesToSubtract <= 0) return;
+
         let table, col_us, col_max, col_bc;
         switch (toolType) {
-            case 'stencil':
-                table = 'stencils'; col_us = 'st_current_us'; col_max = 'st_mx_us'; col_bc = 'st_bc';
-                break;
-            case 'squeegee':
-                table = 'squeegees'; col_us = 'sq_current_us'; col_max = 'sq_mx_us'; col_bc = 'sq_bc';
-                break;
-            case 'plate':
-                table = 'plates'; col_us = 'pl_current_us'; col_max = 'pl_mx_us'; col_bc = 'pl_bc';
-                break;
-            default:
-                return;
+            case 'stencil': table = 'stencils'; col_us = 'st_current_us'; col_max = 'st_mx_us'; col_bc = 'st_bc'; break;
+            case 'squeegee': table = 'squeegees'; col_us = 'sq_current_us'; col_max = 'sq_mx_us'; col_bc = 'sq_bc'; break;
+            case 'plate': table = 'plates'; col_us = 'pl_current_us'; col_max = 'pl_mx_us'; col_bc = 'pl_bc'; break;
+            default: return;
         }
-        const selectQuery = `SELECT ${col_us}, ${col_max} FROM ${table} WHERE ${col_bc} = $1 FOR UPDATE`;
-        const res = await client.query(selectQuery, [barcode]);
-        if (res.rows.length === 0) {
-             console.error(`Herramental ${toolType} con BC ${barcode} no encontrado.`);
-             return;
-        }
-        const old_uses = res.rows[0][col_us] || 0; 
-        const max_uses = res.rows[0][col_max];
-        const new_uses = old_uses + pieces;
-        const updateQuery = `UPDATE ${table} SET ${col_us} = $1 WHERE ${col_bc} = $2`;
-        await client.query(updateQuery, [new_uses, barcode]);
-        if (max_uses && (old_uses < max_uses) && (new_uses >= max_uses)) {
-            console.warn(`ALERTA DE MANTENIMIENTO: ${toolType} ${barcode} ha alcanzado ${new_uses}/${max_uses} usos en línea ${line}.`);
-            const alertQuery = `
-                INSERT INTO maintenance_alerts 
-                (tool_type, tool_barcode, line_number, current_uses_recorded, max_uses_recorded, status)
-                VALUES ($1, $2, $3, $4, $5, 'new')
-                ON CONFLICT (tool_barcode) WHERE (status = 'new') DO NOTHING;
-            `;
-            await client.query(alertQuery, [
-                toolType, barcode, line, new_uses, max_uses
-            ]);
+
+        // 1. Actualizamos la vida del herramental
+        const updateQuery = `UPDATE ${table} SET ${col_us} = ${col_us} + $1 WHERE ${col_bc} = $2 RETURNING ${col_us}, ${col_max}`;
+        const res = await client.query(updateQuery, [piecesToSubtract, barcode]);
+        
+        if (res.rows.length > 0) {
+            const { [col_us]: current, [col_max]: max } = res.rows[0];
+            console.log(`   📉 [UPDATE] ${toolType.toUpperCase()} (${barcode}): ${current}/${max}`);
+
+            // --- AQUÍ ESTÁ LA LÓGICA DE LA ALERTA ---
+            const LIMIT_40K = 40000;
+            const previousUses = current - piecesToSubtract;
+
+            // Definimos si debemos lanzar alerta (Flag)
+            let triggerAlert = false;
+
+            // CASO 1: Llegamos a 40,000 usos (o lo acabamos de pasar)
+            if (previousUses < LIMIT_40K && current >= LIMIT_40K) {
+                console.log(`   ⚠️ [ALERTA] ${barcode} llegó a 40k usos. Registrando en DB...`);
+                triggerAlert = true;
+            }
+
+            // CASO 2: Llegamos al Máximo definido en la tabla (si existe)
+            if (max && current >= max && previousUses < max) {
+                console.log(`   ⚠️ [ALERTA] ${barcode} llegó a su vida máxima (${max}). Registrando en DB...`);
+                triggerAlert = true;
+            }
+
+            // Si se cumplió alguna condición, insertamos en la tabla 'maintenance_alerts'
+            if (triggerAlert) {
+                const alertQuery = `
+                    INSERT INTO maintenance_alerts 
+                    (tool_type, tool_barcode, line_number, current_uses_recorded, max_uses_recorded, status, alert_timestamp)
+                    VALUES ($1, $2, $3, $4, $5, 'new', CURRENT_TIMESTAMP)
+                    ON CONFLICT (tool_barcode) WHERE (status = 'new') DO NOTHING;
+                `;
+                // NOTA: El 'ON CONFLICT' evita que se llene de alertas repetidas si nadie atiende la primera
+                await client.query(alertQuery, [toolType, barcode, line, current, max || 0]);
+            }
         }
     }
 
     try {
         const res = await client.query('SELECT * FROM active_tooling WHERE line_number = $1', [line]);
-        if (res.rows.length === 0) {
-            console.log(`Línea ${line}: No hay herramental activo registrado. Saltando decremento.`);
-            return;
-        }
+        if (res.rows.length === 0) return;
         const activeTools = res.rows[0];
+        
         await client.query('BEGIN');
-        await processTool('stencil', activeTools.stencil_bc, piecesToIncrement);
-        await processTool('squeegee', activeTools.squeegee_f_bc, piecesToIncrement);
-        await processTool('squeegee', activeTools.squeegee_r_bc, piecesToIncrement);
-        await processTool('squeegee', activeTools.squeegee_y_bc, piecesToIncrement);
-        await processTool('plate', activeTools.plate_bc, piecesToIncrement);
+        await processTool('stencil', activeTools.stencil_bc, standardDecrement);
+        await processTool('plate', activeTools.plate_bc, standardDecrement);
+        await processTool('squeegee', activeTools.squeegee_f_bc, squeegeeDecrement);
+        await processTool('squeegee', activeTools.squeegee_r_bc, squeegeeDecrement);
+        await processTool('squeegee', activeTools.squeegee_y_bc, squeegeeDecrement);
         await client.query('COMMIT');
-        console.log(`Línea ${line}: Vida de herramental actualizada (+${piecesToIncrement} usos).`);
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error(`Error al decrementar vida en Línea ${line}: ${error.message}`);
+        console.error(`Error DB: ${error.message}`);
     } finally {
         client.release();
     }
 }
 
-// Exportamos la función que ENCIENDE todo
 module.exports = { startMonitoring };
