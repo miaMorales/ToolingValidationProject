@@ -446,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
           inputId: "edit-history-comment-stencil",
           errorId: "edit-history-comment-error",
           lengthErrorId: "edit-history-comment-length-error",
-          maxLength: 45,
+          maxLength: 100,
         },
       ];
       fieldsToValidate.forEach((field) => {
