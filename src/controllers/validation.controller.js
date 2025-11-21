@@ -1,5 +1,3 @@
-// Este SÍ es el contenido de 'controllers/validation.controller.js'
-
 const validationService = require('../services/validation.service');
 
 // Controlador para el escaneo
@@ -17,7 +15,7 @@ async function handleScan(req, res) {
 async function handleLog(req, res) {
   try {
     const frontendData = req.body;
-    const employeeNumber = req.user.no_employee; // O como lo tengas en tu token
+    const employeeNumber = req.user.no_employee; 
     
     await validationService.logProduction({
       ...frontendData, 
@@ -64,11 +62,31 @@ async function getAlerts(req, res) {
   }
 }
 
-// ¡AQUÍ ESTÁ LA CLAVE!
-// Exportamos las 4 funciones que 'validation.routes.js' necesita.
+// --- (NUEVO) Controlador para verificar pasta aleatoria ---
+async function checkPasta(req, res) {
+  try {
+    // 1. Recibimos solo la línea y el barcode del frontend
+    const { line, barcode } = req.body;
+    
+    // 2. CAMBIO AQUÍ: Obtenemos el número de empleado del token de sesión
+    // El middleware 'verifyToken' ya decodificó el token y puso los datos en req.user
+    const employeeNumber = req.user.no_employee; 
+
+    // 3. Pasamos el employeeNumber como tercer argumento (en lugar de 'Operador')
+    const result = await validationService.verifyPastaLog(line, barcode, employeeNumber);
+    
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error verificando pasta:", error.message);
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
+
+// Exportamos las 5 funciones (incluyendo checkPasta)
 module.exports = { 
     handleScan, 
     handleLog,
     getLogs,
-    getAlerts 
+    getAlerts,
+    checkPasta // <--- ¡AGREGADO!
 };

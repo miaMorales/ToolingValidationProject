@@ -18,7 +18,7 @@ async function validateScan(step, barcode, context) {
         throw new Error('Contexto inválido. Escanee un stencil primero.');
     }
 
-    const modelQuery = 'SELECT length, pasta FROM models WHERE pn_pcb = $1 AND model_side = $2';
+    const modelQuery = 'SELECT length, pasta, plate_pcb FROM models WHERE pn_pcb = $1 AND model_side = $2';
     const modelResult = await pool.query(modelQuery, [context.pn_pcb, context.model_side]);
     const model = modelResult.rows[0];
     if (!model) throw new Error('Receta no encontrada para el modelo y lado correspondientes.');
@@ -41,12 +41,23 @@ async function validateScan(step, barcode, context) {
 
         case 'plate':
             // Lógica de Plate (sin cambios)
+// Lógica de Plate MODIFICADA
             query = 'SELECT pn_pcb, pl_status FROM plates WHERE pl_bc = $1';
             const { rows: plateRows } = await pool.query(query, [barcode]);
             const plate = plateRows[0];
             if (!plate) throw new Error('Plate no encontrado.');
             if (plate.pl_status !== 'OK') throw new Error(`El status del Plate es ${plate.pl_status}, se requiere "OK".`);
-            if (plate.pn_pcb !== context.pn_pcb) throw new Error(`PN de Plate incorrecto. Requerido: ${context.pn_pcb}, Escaneado: ${plate.pn_pcb}.`);
+            
+            // --- AQUÍ ESTÁ LA MAGIA ---
+            // Si el modelo tiene un 'plate_pcb' específico definido por el admin, usamos ese.
+            // Si es null/vacío, usamos el pn_pcb del contexto (comportamiento normal).
+            const requiredPlatePcb = model.plate_pcb || context.pn_pcb;
+
+            if (plate.pn_pcb !== requiredPlatePcb) {
+                throw new Error(`PN de Plate incorrecto. Requerido: ${requiredPlatePcb}, Escaneado: ${plate.pn_pcb}.`);
+            }
+            // --------------------------
+
             return { success: true };
             
         // --- LÓGICA MODIFICADA PARA EXTRAER VALOR DE PASTA ---
@@ -187,4 +198,70 @@ async function getMaintenanceAlerts() {
     return rows;
 }
 
-module.exports = { validateScan, logProduction, getProductionLogs, getMaintenanceAlerts };
+async function verifyPastaLog(line, barcode, username) {
+    // 1. Buscar el ÚLTIMO registro de esa línea
+    const lastLogQuery = `
+        SELECT * FROM production_log 
+        WHERE line_number = $1 
+        ORDER BY log_id DESC 
+        LIMIT 1
+    `;
+    const lastLogResult = await pool.query(lastLogQuery, [line]);
+
+    if (lastLogResult.rows.length === 0) {
+        throw new Error("No hay registros previos en esta línea para comparar.");
+    }
+
+    const lastLog = lastLogResult.rows[0];
+
+    // --- LÓGICA DE COMPARACIÓN FLEXIBLE ---
+    const dbPastaFull = lastLog.pasta_lot ? lastLog.pasta_lot.trim() : '';
+    const scannedPastaFull = barcode.trim();
+
+    // Función auxiliar para extraer la parte importante (K01.005-00M-2)
+    // Asumimos que está en la posición 1 (después de la primera coma)
+    const extractPastaPart = (fullString) => {
+        const parts = fullString.split(',');
+        // Si el string tiene comas, devolvemos la segunda parte (índice 1)
+        // Si no tiene comas, devolvemos todo el string (por seguridad)
+        if (parts.length >= 2) {
+            return parts[1].trim(); 
+        }
+        return fullString;
+    };
+
+    const dbPart = extractPastaPart(dbPastaFull);
+    const scannedPart = extractPastaPart(scannedPastaFull);
+
+    // Validar: Comparamos SOLO la parte extraída
+    if (dbPart !== scannedPart) {
+        throw new Error(`¡ERROR! La pasta escaneada (${scannedPart}) NO coincide con la actual en línea (${dbPart}).`);
+    }
+
+    // 3. Si coincide, insertamos el nuevo log
+    // NOTA: Guardamos el barcode COMPLETO escaneado (scannedPastaFull), 
+    // para tener el registro exacto del lote nuevo, aunque solo hayamos validado la parte media.
+    const insertQuery = `
+        INSERT INTO production_log 
+        (line_number, pn_pcb, model_name, model_side, pasta_lot, username, stencil_bc, squeegee_f_bc, squeegee_r_bc, squeegee_y_bc, plate_bc)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `;
+
+    await pool.query(insertQuery, [
+        line, 
+        lastLog.pn_pcb, 
+        lastLog.model_name, 
+        lastLog.model_side, 
+        scannedPastaFull, // <--- Guardamos TODO el string nuevo
+        username,         // <--- Tu número de empleado corregido
+        lastLog.stencil_bc, 
+        lastLog.squeegee_f_bc,
+        lastLog.squeegee_r_bc,
+        lastLog.squeegee_y_bc,
+        lastLog.plate_bc
+    ]);
+
+    return { success: true, message: "Verificación de pasta correcta y registrada." };
+}
+
+module.exports = { validateScan, logProduction, getProductionLogs, getMaintenanceAlerts, verifyPastaLog };

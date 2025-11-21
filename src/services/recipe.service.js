@@ -21,11 +21,23 @@ async function getRecipeList() {
  * Obtiene el herramental compatible para un PN PCB, lado y línea específicos.
  */
 async function getRecipeDetails(pn_pcb, model_side, lineNumber) {
+    // 1. PRIMERO: Obtener info del modelo para ver si tiene 'plate_pcb' (la excepción)
+    const modelInfoQuery = 'SELECT model_name, plate_pcb FROM models WHERE pn_pcb = $1 LIMIT 1';
+    const modelInfoResult = await pool.query(modelInfoQuery, [pn_pcb]);
+    const modelData = modelInfoResult.rows[0] || { model_name: 'Desconocido', plate_pcb: null };
+
+    // 2. DECIDIR QUÉ PCB BUSCAR PARA PLATES
+    // Si 'plate_pcb' tiene datos (ej. P00.266-00), usamos ese. Si no, usamos el normal (pn_pcb).
+    const searchPlatePcb = modelData.plate_pcb || pn_pcb;
+
+    // 3. REALIZAR LAS CONSULTAS
     const stencilsQuery = `SELECT st_id, st_bc, st_no_serie, st_ver, thickness, st_status FROM stencils WHERE pn_pcb = $1 AND model_side = $2 AND st_status <> 'BAJA'`;
     const stencilsResult = await pool.query(stencilsQuery, [pn_pcb, model_side]);
 
+    // --- OJO AQUÍ: Usamos 'searchPlatePcb' en vez de 'pn_pcb' ---
     const platesQuery = `SELECT pl_id, pl_bc, pl_no_serie, pl_status FROM plates WHERE pn_pcb = $1 AND model_side = 'BT' AND pl_status <> 'BAJA'`;
-    const platesResult = await pool.query(platesQuery, [pn_pcb]);
+    const platesResult = await pool.query(platesQuery, [searchPlatePcb]);
+    // -------------------------------------------------------------
 
     let squeegeesQuery = `
         SELECT sq.sq_id, sq.sq_bc, sq.sq_length, sq.sq_status 
@@ -40,13 +52,11 @@ async function getRecipeDetails(pn_pcb, model_side, lineNumber) {
     }
     const squeegeesResult = await pool.query(squeegeesQuery, [pn_pcb, model_side]);
 
-    const modelInfoQuery = 'SELECT model_name FROM models WHERE pn_pcb = $1 LIMIT 1';
-    const modelInfoResult = await pool.query(modelInfoQuery, [pn_pcb]);
-
     return {
-        model_name: modelInfoResult.rows[0]?.model_name || 'Desconocido',
+        model_name: modelData.model_name,
         pn_pcb: pn_pcb,
-        model_side: model_side,
+        // 4. DEVOLVEMOS EL DATO PARA QUE EL FRONTEND SEPA QUÉ PASÓ
+        plate_pcb_used: searchPlatePcb, 
         stencils: stencilsResult.rows,
         plates: platesResult.rows,
         squeegees: squeegeesResult.rows
@@ -57,7 +67,8 @@ async function getRecipeDetails(pn_pcb, model_side, lineNumber) {
  * Obtiene los detalles de un modelo específico por sus IDs.
  */
 async function getModelDetailsByIds(pn_pcb, model_side) {
-    const query = 'SELECT model_qr, pasta, length FROM models WHERE pn_pcb = $1 AND model_side = $2';
+    // AGREGAMOS plate_pcb A LA CONSULTA
+    const query = 'SELECT model_qr, pasta, length, plate_pcb FROM models WHERE pn_pcb = $1 AND model_side = $2';
     const { rows } = await pool.query(query, [pn_pcb, model_side]);
     return rows[0];
 }
@@ -80,7 +91,8 @@ async function updateModelByIds(pn_pcb, model_side, newData) {
  * Crea un nuevo modelo (TOP, BOT, BT) y asigna líneas de trabajo.
  */
 async function createNewModel(modelData) {
-    const { model_name, pn_pcb, model_qr, pasta, length, lines } = modelData;
+    // 1. RECIBIMOS plate_pcb
+    const { model_name, pn_pcb, model_qr, pasta, length, lines, plate_pcb } = modelData;
     
     const checkQuery = 'SELECT 1 FROM models WHERE pn_pcb = $1 LIMIT 1';
     const existing = await pool.query(checkQuery, [pn_pcb]);
@@ -91,13 +103,20 @@ async function createNewModel(modelData) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        
+        // 2. AGREGAMOS LA COLUMNA Y EL VALOR EN EL INSERT
+        // Nota: Usamos $7 para el plate_pcb
         const insertModelQuery = `
-            INSERT INTO models (model_name, pn_pcb, model_side, model_qr, pasta, length) 
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO models (model_name, pn_pcb, model_side, model_qr, pasta, length, plate_pcb) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
         `;
-        await client.query(insertModelQuery, [model_name, pn_pcb, 'TOP', model_qr, pasta, length]);
-        await client.query(insertModelQuery, [model_name, pn_pcb, 'BOT', model_qr, pasta, length]);
-        await client.query(insertModelQuery, [model_name, pn_pcb, 'BT', model_qr, pasta, length]);
+        
+        // Pasamos (plate_pcb || null) por si viene vacío
+        const pcbValue = plate_pcb || null;
+
+        await client.query(insertModelQuery, [model_name, pn_pcb, 'TOP', model_qr, pasta, length, pcbValue]);
+        await client.query(insertModelQuery, [model_name, pn_pcb, 'BOT', model_qr, pasta, length, pcbValue]);
+        await client.query(insertModelQuery, [model_name, pn_pcb, 'BT', model_qr, pasta, length, pcbValue]);
 
         const insertWorkLineQuery = `
             INSERT INTO work_line (wl_no, model_name, model_side, run)

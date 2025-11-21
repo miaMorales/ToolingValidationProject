@@ -292,7 +292,7 @@ async function createStencil(data) {
     const newId = insertResult.rows[0].st_id;
 
     // --- CORRECCIÓN 2: El barcode debe ser el 'st_job' ---
-    const barcode = data.st_job; // <-- AQUÍ ESTÁ EL CAMBIO (coincide con el VARCHAR(10))
+    const barcode = `${data.pn_pcb}-${data.model_side}-${data.st_no_serie}-${data.st_ver}`;
 
     const qrBuffer = await qrcode.toBuffer(barcode); // El QR sí puede ser el 'st_job'
 

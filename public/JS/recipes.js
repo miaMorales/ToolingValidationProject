@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pastaOtroInput = document.getElementById('new-model-pasta-otro');
     const lengthInput = document.getElementById('new-model-length');
     const lineCheckboxes = document.querySelectorAll('input[name="work_lines"]');
-
+    const platePcbInput = document.getElementById('new-model-plate-pcb');
     // Errores del Modal
     const errorDivs = {
         modelName: document.getElementById('new-model-name-error'),
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Validar QR (solo longitud si existe)
         const qrVal = qrInput.value.trim();
         // Maxlength ya lo controla el HTML (no necesita validación JS si es opcional)
-
+        
         // 4. Validar Pasta
         const pastaSelectVal = pastaSelect.value;
         let finalPasta = pastaSelectVal;
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('length', 'Debe ser solo números enteros.'); isValid = false;
         }
         // Maxlength ya lo controla el HTML
-
+        const platePcbVal = platePcbInput ? platePcbInput.value.trim() : '';
         // 6. Validar Líneas de Trabajo
         const selectedLines = [];
         lineCheckboxes.forEach((checkbox) => {
@@ -248,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
             model_qr: qrVal, // Puede estar vacío
             pasta: finalPasta,
             length: lengthVal, // Ya validado como número
-            lines: selectedLines
+            lines: selectedLines,
+            plate_pcb: platePcbVal
         };
 
         try {

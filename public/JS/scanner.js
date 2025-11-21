@@ -268,4 +268,98 @@ async function loadMaintenanceAlerts() {
     loadMaintenanceAlerts();
     // Iniciar
     resetState();
+
+// ==========================================
+    // LÓGICA PARA VERIFICACIÓN DE PASTA (NUEVO)
+    // ==========================================
+    const pastaLineSel = document.getElementById('pasta-line-selection');
+    const pastaScanView = document.getElementById('pasta-scan-view');
+    const pastaCarousel = document.getElementById('pasta-line-carousel');
+    const pastaInput = document.getElementById('pasta-scanner-input');
+    const pastaPrompt = document.getElementById('pasta-prompt-text');
+    const pastaBackBtn = document.getElementById('pasta-back-btn');
+    let currentPastaLine = null;
+
+    // 1. Selección de línea en pestaña Pasta
+    pastaCarousel.addEventListener('click', (event) => {
+        const card = event.target.closest('.line-card');
+        if (card) {
+            currentPastaLine = card.getAttribute('data-line');
+            pastaLineSel.style.display = 'none';
+            pastaScanView.style.display = 'block';
+            pastaPrompt.textContent = `Línea ${currentPastaLine}: Escanee la PASTA`;
+            pastaInput.value = '';
+            pastaInput.focus();
+        }
+    });
+
+    // 2. Botón volver
+    pastaBackBtn.addEventListener('click', () => {
+        currentPastaLine = null;
+        pastaScanView.style.display = 'none';
+        pastaLineSel.style.display = 'block';
+    });
+
+    // 3. Manejo del escáner
+    pastaInput.addEventListener('keypress', async (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const barcode = pastaInput.value.trim();
+            if (!barcode) return;
+
+            try {
+                // Llamada al endpoint que creamos arriba
+                // NOTA: Asegúrate de enviar el username (quizás lo tienes en localStorage o global)
+                // Aquí asumo que tienes una forma de obtener el usuario, si no, usa 'Operador'
+                const username = localStorage.getItem('username') || 'Operador'; 
+
+                const response = await authFetch('/api/validation/check-pasta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        line: currentPastaLine, 
+                        barcode: barcode,
+                        username: username 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ CORRECTO: La pasta coincide y se ha registrado.');
+                    // Regresamos a seleccionar línea o limpiamos input
+                    pastaInput.value = '';
+                    // Opcional: volver al inicio
+                    pastaBackBtn.click();
+                } else {
+                    alert(`❌ ERROR: ${result.message}`);
+                    pastaInput.value = '';
+                }
+
+            } catch (error) {
+                alert('Error de conexión o servidor.');
+                console.error(error);
+            }
+        }
+    });
+    const pastaScrollLeft = document.getElementById('pasta-scroll-left-btn');
+    const pastaScrollRight = document.getElementById('pasta-scroll-right-btn');
+
+    if (pastaScrollLeft && pastaScrollRight) {
+        pastaScrollLeft.addEventListener('click', () => {
+            pastaCarousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+
+        pastaScrollRight.addEventListener('click', () => {
+            pastaCarousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
+
+    // Asegurar foco en el input cuando estemos en la vista de escaneo
+    pastaInput.addEventListener('blur', () => {
+        if (pastaScanView.style.display === 'block') {
+            setTimeout(() => pastaInput.focus(), 10);
+        }
+    });
+
 });

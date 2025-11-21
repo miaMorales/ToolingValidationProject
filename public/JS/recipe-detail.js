@@ -115,8 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             populateStencilsTable(data.stencils);
             populateSqueegeesTable(data.squeegees);
-            populatePlatesTable(data.plates);
-
+            populatePlatesTable(data.plates, data.plate_pcb_used, data.pn_pcb);
         } catch (error) {
             console.error(error);
             recipeTitle.textContent = 'Error al cargar los detalles.';
@@ -200,18 +199,37 @@ function populateSqueegeesTable(squeegees) {
     squeegeesTableBody.querySelectorAll('.lazy-qr').forEach(img => loadProtectedImage(img));
 }
 
-function populatePlatesTable(plates) {
+function populatePlatesTable(plates, usedPcb, originalPcb) {
     platesTableBody.innerHTML = '';
+
+    // 1. Lógica para mostrar aviso si se está usando un PCB diferente
+    const platesTabPane = document.getElementById('plates-content');
+    // Buscamos si ya existe un aviso previo y lo borramos para no duplicar
+    const existingAlert = document.getElementById('plate-pcb-alert');
+    if (existingAlert) existingAlert.remove();
+
+    if (usedPcb && usedPcb !== originalPcb) {
+        const alertDiv = document.createElement('div');
+        alertDiv.id = 'plate-pcb-alert';
+        alertDiv.className = 'alert alert-info d-flex align-items-center mb-3';
+        alertDiv.innerHTML = `
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div>
+                <strong>Nota:</strong> Este modelo usa los plates del PCB <strong>${usedPcb}</strong>.
+            </div>
+        `;
+        // Insertamos el aviso antes de la tabla (prepend)
+        platesTabPane.prepend(alertDiv);
+    }
+
+    // 2. Llenado normal de la tabla
     if (!plates || plates.length === 0) {
-        platesTableBody.innerHTML = '<tr><td colspan="6">No se encontraron plates compatibles.</td></tr>';
+        platesTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No se encontraron plates compatibles.</td></tr>';
         return;
     }
     plates.forEach((item, index) => {
-        // --- CAMBIO AQUÍ ---
         const qrCodeUrl = item.pl_bc ? `/api/plates/${item.pl_id}/qr` : '';
-        // Usamos data-src y la clase 'lazy-qr'
         const qrImage = qrCodeUrl ? `<img alt="Cargando QR..." class="table-qr lazy-qr" data-src="${qrCodeUrl}">` : '';
-        // --- FIN DEL CAMBIO ---
 
         const row = `
             <tr>
@@ -226,7 +244,6 @@ function populatePlatesTable(plates) {
         platesTableBody.innerHTML += row;
     });
 
-    // --- CAMBIO AQUÍ: Llamar al helper después de llenar la tabla ---
     platesTableBody.querySelectorAll('.lazy-qr').forEach(img => loadProtectedImage(img));
 }
 
@@ -254,7 +271,6 @@ function populatePlatesTable(plates) {
             // Rellena QR y Largo
             editQrInput.value = modelData.model_qr || '';
             editLengthInput.value = modelData.length || '';
-
             // Llenar select de Pasta
             editPastaSelect.innerHTML = '<option value="" selected disabled>Seleccionar existente</option>';
             let pastaExistsInList = false;
@@ -306,13 +322,13 @@ function populatePlatesTable(plates) {
 
 
     // 3. Evento para guardar los cambios (CON VALIDACIÓN)
+// 3. Evento para guardar los cambios (CON VALIDACIÓN)
     saveModelChangesBtn.addEventListener('click', async () => {
         clearAllEditModalErrors();
         let isValid = true;
 
-        // Validar QR (solo longitud si no está vacío)
+        // Validar QR
         const qrVal = editQrInput.value.trim();
-        // Maxlength ya valida longitud máxima
 
         // Validar Pasta
         const pastaSelectVal = editPastaSelect.value;
@@ -326,17 +342,16 @@ function populatePlatesTable(plates) {
                 showEditError('pastaOtro', 'Especifique la nueva pasta.');
                 isValid = false;
             }
-             // Maxlength valida longitud máxima
         }
 
         // Validar Largo
         const lengthVal = editLengthInput.value.trim();
-         if (!lengthVal) { // Largo es requerido en edición también
+         if (!lengthVal) { 
              showEditError('length', 'El largo es requerido.'); isValid = false;
         } else if (!isNumericRegex.test(lengthVal)) {
             showEditError('length', 'Debe ser solo números enteros.'); isValid = false;
         }
-        // Maxlength ya valida longitud máxima
+
 
         if (!isValid) return;
 
@@ -344,7 +359,7 @@ function populatePlatesTable(plates) {
         const updatedData = {
             qr: qrVal,
             pasta: finalPasta,
-            length: lengthVal // Ya validado como número
+            length: lengthVal
         };
 
         try {
@@ -357,8 +372,8 @@ function populatePlatesTable(plates) {
 
             editModal.hide();
             alert('Modelo actualizado con éxito.');
-            // Opcional: Recargar detalles podría ser útil si estos datos se muestran en la página principal
-            // loadDetails();
+            // Opcional: recargar la página para ver cambios
+            location.reload(); 
 
         } catch (error) {
             console.error(error);
